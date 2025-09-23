@@ -17,9 +17,20 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-// 📌 Получить посты
+// 📌 Получить посты + имя автора из таблицы users
 app.get("/api/posts", async (req, res) => {
-  const { data, error } = await supabase.from("posts").select("*")
+  const { data, error } = await supabase
+    .from("posts")
+    .select(`
+      id,
+      title,
+      body,
+      category,
+      image,
+      author,
+      users ( name )
+    `)
+
   if (error) return res.status(400).json({ error: error.message })
   res.json(data)
 })
