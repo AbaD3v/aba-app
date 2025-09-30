@@ -4,7 +4,7 @@ function PostsList() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Берём URL из .env (VITE_API_URL)
+  // Берём API URL из .env (VITE_API_URL), иначе fallback → localhost
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
 
   useEffect(() => {

@@ -147,7 +147,11 @@ export default function App() {
     try {
       // 1) fetch posts
       // Use REST backend instead of Supabase for posts
-      const postsRes = await fetch('http://localhost:5000/posts')
+      // App.jsx
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+
+      const postsRes = await fetch(`${API_URL}/posts`)
+
       if (!postsRes.ok) throw new Error(`Failed to fetch posts: ${postsRes.status}`)
       let postsData = await postsRes.json()
       // Ensure postsData is an array and sort by created_at desc if backend doesn't
