@@ -66,9 +66,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import './styles.css'
-import { createClient } from '@supabase/supabase-js'
 import { supabase } from './supabase.js'
-import PostsList from "./PostsList.jsx"
 
 /* -----------------------------
    Helpers
@@ -108,13 +106,13 @@ export default function App() {
      ----------------------------- */
   useEffect(() => {
     // Check if a session exists
-    (async () => {
+    ;(async () => {
       try {
         const { data: sessionData } = await supabase.auth.getSession()
         const authUser = sessionData?.session?.user || null
         if (authUser) {
           // fetch profile from users table
-          const { data: profile } = await supabase.from('users').select('*').eq('id', authUser.id).maybeSingle()
+          const { data: profile } = await supabase.from('users').select('*').eq('id', authUser.id).single()
           setCurrentUser(profile ? ({ id: profile.id, name: profile.name, role: profile.role, email: profile.email }) : null)
         }
       } catch (e) { console.warn('auth check failed', e) }
@@ -122,12 +120,12 @@ export default function App() {
       await loadAll()
     })()
 
-    // (optional) subscribe to auth changes to reflect login/logout
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // subscribe to auth changes to reflect login/logout
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN') {
         const user = session?.user || (await supabase.auth.getSession()).data?.session?.user
         if (user) {
-          const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle()
+          const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single()
           setCurrentUser(profile ? ({ id: profile.id, name: profile.name, role: profile.role, email: profile.email }) : null)
         }
       }
@@ -136,7 +134,8 @@ export default function App() {
       }
     })
 
-    return () => { sub?.subscription?.unsubscribe?.() }
+    return () => subscription.unsubscribe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /* -----------------------------
@@ -145,16 +144,11 @@ export default function App() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
-      // 1) fetch posts
-      // Use REST backend instead of Supabase for posts
-      // App.jsx
+      // 1) fetch posts via REST backend (keep existing behavior)
       const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
-
       const postsRes = await fetch(`${API_URL}/posts`)
-
       if (!postsRes.ok) throw new Error(`Failed to fetch posts: ${postsRes.status}`)
       let postsData = await postsRes.json()
-      // Ensure postsData is an array and sort by created_at desc if backend doesn't
       if (!Array.isArray(postsData)) postsData = []
       postsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
@@ -205,7 +199,6 @@ export default function App() {
       setUsersMap(uMap)
       setCommentsByPost(cMap)
       setLikesMap(lMap)
-
     } catch (err) {
       console.error('loadAll error', err)
     } finally { setLoading(false) }
@@ -213,39 +206,31 @@ export default function App() {
 
   /* -----------------------------
      Auth: register / login / logout
-     - This implementation uses Supabase Auth for security.
-     - We also keep a "users" row for metadata (role, name).
      ----------------------------- */
-const register = useCallback(async ({ name, email, password }) => {
-  if (!email || !password || !name) return { error: 'Барлық өрістер толтырылуы керек' }
-  
-  try {
-    // 1. Создаём пользователя через Supabase Auth
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
-    if (signUpError) return { error: signUpError.message || signUpError }
-    // Попытать получить user из ответа или через сессию
-    const user = data?.user || (await supabase.auth.getSession()).data?.session?.user
-    if (!user) return { error: 'Пайдаланушыны алу мүмкін болмады' }
+  const register = useCallback(async ({ name, email, password }) => {
+    if (!email || !password || !name) return { error: 'Барлық өрістер толтырылуы керек' }
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+      if (signUpError) return { error: signUpError.message || signUpError }
+      const user = data?.user || (await supabase.auth.getSession()).data?.session?.user
+      if (!user) return { error: 'Пайдаланушыны алу мүмкін болмады' }
 
-    // 2. Вставляем профиль в таблицу users с id = user.id
-    const { data: profile, error: insertError } = await supabase
-      .from('users')
-      .insert([{ id: user.id, name, email }])
-      .select()
-      .maybeSingle()
-    if (insertError) return { error: insertError.message || insertError }
- 
-     // 3. Обновляем состояние приложения
-     setCurrentUser({ id: profile.id, name: profile.name, role: profile.role || 'student', email: profile.email })
-     await loadAll()
-     setView('home')
-     return { ok: true }
-   } catch (err) {
-     console.error(err)
-     return { error: 'Тіркелу мүмкін болмады' }
-   }
- }, [loadAll])
+      const { data: profile, error: insertError } = await supabase
+        .from('users')
+        .insert([{ id: user.id, name, email }])
+        .select()
+        .single()
+      if (insertError) return { error: insertError.message || insertError }
 
+      setCurrentUser({ id: profile.id, name: profile.name, role: profile.role || 'student', email: profile.email })
+      await loadAll()
+      setView('home')
+      return { ok: true }
+    } catch (err) {
+      console.error(err)
+      return { error: 'Тіркелу мүмкін болмады' }
+    }
+  }, [loadAll])
 
   const login = useCallback(async ({ email, password }) => {
     if (!email || !password) return { error: 'Email және пароль қажет' }
@@ -254,7 +239,7 @@ const register = useCallback(async ({ name, email, password }) => {
       if (error) return { error: error.message || error }
       const authUser = data?.user || (await supabase.auth.getSession()).data?.session?.user
       if (!authUser) return { error: 'Пайдаланушы сессиясы табылмады' }
-      const { data: profile } = await supabase.from('users').select('*').eq('id', authUser.id).maybeSingle()
+      const { data: profile } = await supabase.from('users').select('*').eq('id', authUser.id).single()
       if (!profile) return { error: 'Профиль табылмады' }
       setCurrentUser({ id: profile.id, name: profile.name, role: profile.role, email: profile.email })
       await loadAll()
@@ -277,11 +262,11 @@ const register = useCallback(async ({ name, email, password }) => {
      ----------------------------- */
   const createPost = useCallback(async ({ title, body, category }) => {
     if (!currentUser) return { error: 'Кіру қажет' }
-    if (currentUser.role === 'student') return { error: 'Тек мұғалімдер мен админ жариялай алады' }
+    if (!currentUser.role || currentUser.role === 'student') return { error: 'Тек мұғалімдер мен админ жариялай алады' }
     if (!title || !body) return { error: 'Тақырып пен мәтін қажет' }
     try {
-      const image = `https://picsum.photos/seed/${Math.random().toString(36).slice(2,8)}/1200/800`
-      const { data, error } = await supabase.from('posts').insert([{ title, body, category: category || 'Жалпы', image, author: currentUser.id }]).select().maybeSingle()
+      const image = `https://picsum.photos/seed/${Math.random().toString(36).slice(2, 8)}/1200/800`
+      const { data, error } = await supabase.from('posts').insert([{ title, body, category: category || 'Жалпы', image, author: currentUser.id }]).select().single()
       if (error) throw error
       await loadAll()
       return { ok: true, post: data }
@@ -307,7 +292,9 @@ const register = useCallback(async ({ name, email, password }) => {
   const toggleLike = useCallback(async (postId) => {
     if (!currentUser) { alert('Лайк басу үшін кіріңіз'); return }
     try {
-      const { data: existing } = await supabase.from('likes').select('*').eq('post_id', postId).eq('user_id', currentUser.id).maybeSingle()
+      const { data: existingArr, error: existErr } = await supabase.from('likes').select('*').eq('post_id', postId).eq('user_id', currentUser.id).limit(1)
+      if (existErr) throw existErr
+      const existing = (existingArr && existingArr[0]) || null
       if (existing) {
         const { error } = await supabase.from('likes').delete().eq('id', existing.id)
         if (error) throw error
@@ -340,7 +327,7 @@ const register = useCallback(async ({ name, email, password }) => {
     if (!currentUser) { alert('Кіру қажет'); return }
     try {
       // fetch comment to check author
-      const { data: c } = await supabase.from('comments').select('*').eq('id', commentId).maybeSingle()
+      const { data: c } = await supabase.from('comments').select('*').eq('id', commentId).single()
       if (!c) return
       if (!(currentUser.role === 'admin' || currentUser.id === c.author)) { alert('Тек автор немесе админ өшіре алады'); return }
       if (!confirm('Пікірді жоюға сенімдісіз бе?')) return
@@ -366,10 +353,7 @@ const register = useCallback(async ({ name, email, password }) => {
     if (!currentUser || currentUser.role !== 'admin') { alert('Тек админ жоя алады'); return }
     if (!confirm('Пайдаланушыны жоюға сенімдісіз бе?')) return
     try {
-      // remove likes, comments, posts, then user
-      await supabase.from('likes').delete().eq('user_id', userId)
-      await supabase.from('comments').delete().eq('author', userId)
-      await supabase.from('posts').delete().eq('author', userId)
+      // rely on DB cascade if configured — delete user row
       const { error } = await supabase.from('users').delete().eq('id', userId)
       if (error) throw error
       await loadAll()
@@ -636,7 +620,9 @@ function PostView({ post, usersMap, currentUser, comments = [], likes, onLike, o
 
       <h2 className="title" style={{ marginTop: 8 }}>{post.title}</h2>
       <div className="meta">{timeAgo(post.created_at)} · Автор: <button className="btn small ghost" onClick={() => onOpenProfile(usersMap[post.author] || { id: post.author, name: 'Белгісіз' })}>{(usersMap[post.author] && usersMap[post.author].name) || 'Белгісіз'}</button> · <span className="text-muted small">{post.category}</span></div>
-      <div style={{ marginTop: 12 }}><img style={{ width: '100%', borderRadius: 8, maxHeight: 420, objectFit: 'cover' }} src={post.image} alt={post.title} /></div>
+      <div style={{ marginTop: 12 }}>
+        <img style={{ width: '100%', borderRadius: 8, maxHeight: 420, objectFit: 'cover' }} src={post.image || `https://picsum.photos/seed/${post.id}/1200/800`} alt={post.title} />
+      </div>
       <p style={{ marginTop: 12 }}>{post.body}</p>
 
       <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
@@ -724,7 +710,7 @@ function ProfileView({ user, posts, currentUser, onBack, onOpenPost }) {
           {posts.map(p => (
             <article key={p.id} className="post card" style={{ padding: 0 }}>
               <div className="post-cover" style={{ height: 140 }}>
-                <img src={p.image} alt={p.title} />
+                <img src={p.image || `https://picsum.photos/seed/${p.id}/1200/800`} alt={p.title} />
               </div>
               <div className="post-content">
                 <h3 className="title" style={{ fontSize: 16 }}>{p.title}</h3>
