@@ -8,7 +8,16 @@ import { fileURLToPath } from "url"
 dotenv.config()
 
 const app = express()
-app.use(cors())
+
+// ✅ Настройка CORS (разрешаем твой фронт с Vercel)
+app.use(
+  cors({
+    origin: ["https://aba-app-gules.vercel.app"], // твой домен на Vercel
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+)
+
 app.use(express.json())
 
 // Подключение к Supabase
@@ -41,21 +50,23 @@ app.post("/api/comments", async (req, res) => {
   const { data, error } = await supabase
     .from("comments")
     .insert([{ text, post_id, author }])
+
   if (error) return res.status(400).json({ error: error.message })
   res.json(data)
 })
 
 // ==============================
-// ⚡ Раздача фронта из dist
+// ⚡ Раздача фронта из dist (Render будет искать тут)
 // ==============================
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// 👉 dist теперь ищется в этой же папке
-app.use(express.static(path.join(__dirname, "dist")))
+const distPath = path.join(__dirname, "dist")
+app.use(express.static(distPath))
 
+// Для всех остальных маршрутов → index.html
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "dist", "index.html"))
+  res.sendFile(path.join(distPath, "index.html"))
 })
 
 // ==============================
