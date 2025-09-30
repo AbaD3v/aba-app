@@ -43,6 +43,25 @@ app.get("/api/posts", async (req, res) => {
   if (error) return res.status(400).json({ error: error.message })
   res.json(data)
 })
+// 📌 Регистрация нового пользователя
+app.post("/api/signup", async (req, res) => {
+  const { email, password, name } = req.body
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { name }, // Сохраняем имя в профиле Supabase
+    },
+  })
+
+  if (error) {
+    return res.status(422).json({ error: error.message })
+  }
+
+  res.json(data)
+})
+
 
 // 📌 Добавить комментарий
 app.post("/api/comments", async (req, res) => {
