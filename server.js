@@ -47,16 +47,20 @@ app.get("/api/posts", async (req, res) => {
 app.post("/api/signup", async (req, res) => {
   const { email, password, name } = req.body
 
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email и пароль обязательны" })
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { name }, // Сохраняем имя в профиле Supabase
+      data: { name: name || "" }, // имя можно пустым
     },
   })
 
   if (error) {
-    return res.status(422).json({ error: error.message })
+    return res.status(400).json({ error: error.message })
   }
 
   res.json(data)
