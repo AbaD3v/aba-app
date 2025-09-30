@@ -1,51 +1,56 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
-import { supabase } from './supabase.js'
+import { StrictMode } from "react"
+import { createRoot } from "react-dom/client"
+import "./index.css"
+import App from "./App.jsx"
+import { supabase } from "./supabase.js"
 
+// 📌 Загружаем посты из Supabase
 async function loadPosts() {
   const { data, error } = await supabase
-    .from('posts')
+    .from("posts")
     .select(`
       id,
       title,
-      content,
+      body,
       created_at,
-      users (username)
+      users ( name )
     `)
 
   if (error) {
-    console.error('Ошибка:', error)
+    console.error("Ошибка:", error)
   } else {
-    console.log('Посты из базы:', data)
+    console.log("Посты из базы:", data)
     renderPosts(data)
   }
 }
 
+// 📌 Рендер постов на страницу
 function renderPosts(posts) {
-  const container = document.querySelector('.posts-grid')
-  container.innerHTML = ''
+  const container = document.querySelector(".posts-grid")
+  if (!container) return // если контейнера нет, выходим
 
-  posts.forEach(post => {
-    const div = document.createElement('div')
-    div.className = 'card post'
+  container.innerHTML = ""
+
+  posts.forEach((post) => {
+    const div = document.createElement("div")
+    div.className = "card post"
     div.innerHTML = `
       <div class="post-content">
         <h3 class="title">${post.title}</h3>
-        <p class="excerpt">${post.content}</p>
-        <p class="meta">Автор: ${post.users?.username || '—'}</p>
+        <p class="excerpt">${post.body}</p>
+        <p class="meta">Автор: ${post.users?.name || "—"}</p>
       </div>
     `
     container.appendChild(div)
   })
 }
 
+// Загружаем посты при старте
 loadPosts()
 
-
-createRoot(document.getElementById('root')).render(
+// Рендерим React-приложение
+createRoot(document.getElementById("root")).render(
   <StrictMode>
     <App />
-  </StrictMode>,
+  </StrictMode>
 )

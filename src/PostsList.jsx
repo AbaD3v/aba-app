@@ -34,6 +34,7 @@ function PostsList() {
           <p>
             <b>Категория:</b> {post.category}
           </p>
+          <p><b>Автор:</b> {post.users?.name || "Неизвестно"}</p>
           {post.image && (
             <img
               src={post.image}
