@@ -51,11 +51,11 @@ app.post("/api/comments", async (req, res) => {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-app.use(express.static(path.join(__dirname, "../dist")))
+// 👉 dist теперь ищется в этой же папке
+app.use(express.static(path.join(__dirname, "dist")))
 
-// Для всех остальных маршрутов → index.html
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../dist", "index.html"))
+  res.sendFile(path.join(__dirname, "dist", "index.html"))
 })
 
 // ==============================
