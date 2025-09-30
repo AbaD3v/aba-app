@@ -4,10 +4,14 @@ function PostsList() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Берём URL из .env (VITE_API_URL)
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch("http://localhost:5000/posts")
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/posts`)
+        if (!res.ok) throw new Error("Ошибка загрузки постов")
         const data = await res.json()
         setPosts(data)
       } catch (err) {
@@ -17,7 +21,7 @@ function PostsList() {
       }
     }
     fetchPosts()
-  }, [])
+  }, [API_URL])
 
   if (loading) return <p>Загрузка...</p>
 
@@ -30,11 +34,13 @@ function PostsList() {
           <p>
             <b>Категория:</b> {post.category}
           </p>
-          <img
-            src={post.image}
-            alt={post.title}
-            style={{ width: "300px", borderRadius: "8px" }}
-          />
+          {post.image && (
+            <img
+              src={post.image}
+              alt={post.title}
+              style={{ width: "300px", borderRadius: "8px" }}
+            />
+          )}
         </div>
       ))}
     </div>
