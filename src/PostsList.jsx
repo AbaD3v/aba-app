@@ -4,13 +4,13 @@ function PostsList() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Берём API URL из .env (VITE_API_URL), иначе fallback → localhost
+  // ✅ Берём API URL из .env
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch(`${API_URL}/posts`) // ✅ используем API_URL
+        const res = await fetch(`${API_URL}/posts`)
         if (!res.ok) throw new Error("Ошибка загрузки постов")
         const data = await res.json()
         setPosts(data)
@@ -34,7 +34,9 @@ function PostsList() {
           <p>
             <b>Категория:</b> {post.category}
           </p>
-          <p><b>Автор:</b> {post.users?.name || "Неизвестно"}</p>
+          <p>
+            <b>Автор:</b> {post.users?.name || "—"}
+          </p>
           {post.image && (
             <img
               src={post.image}
