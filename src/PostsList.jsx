@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { supabase } from "../supabase"
 
-function PostsList() {
+export default function PostsList() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [likes, setLikes] = useState({})
@@ -9,20 +9,16 @@ function PostsList() {
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
 
-  // ✅ Проверяем авторизованного пользователя
+  // 🔐 Получаем текущего пользователя
   useEffect(() => {
     const getUser = async () => {
-      const { data, error } = await supabase.auth.getUser()
-      if (data?.user) {
-        setUserId(data.user.id)
-      } else {
-        console.log("Пользователь не авторизован")
-      }
+      const { data } = await supabase.auth.getUser()
+      if (data?.user) setUserId(data.user.id)
     }
     getUser()
   }, [])
 
-  // ✅ Загружаем посты
+  // 📦 Загружаем посты
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -37,39 +33,31 @@ function PostsList() {
         setLoading(false)
       }
     }
-
     fetchPosts()
-  }, [API_URL])
+  }, [])
 
-  // ✅ Получаем количество лайков
+  // ❤️ Загружаем количество лайков
   const fetchLikes = async (postId) => {
     try {
       const res = await fetch(`${API_URL}/likes/${postId}`)
-      if (!res.ok) throw new Error("Ошибка получения лайков")
+      if (!res.ok) throw new Error("Ошибка лайков")
       const data = await res.json()
       setLikes((prev) => ({ ...prev, [postId]: data.likes }))
     } catch (err) {
-      console.error("Ошибка лайков:", err)
+      console.error(err)
     }
   }
 
-  // ✅ Лайкаем / снимаем лайк
+  // 👍 Лайк / анлайк
   const handleLike = async (postId) => {
-    if (!userId) {
-      alert("Сначала войди в аккаунт 😅")
-      return
-    }
-
+    if (!userId) return alert("Сначала войдите в аккаунт 😅")
     try {
       const res = await fetch(`${API_URL}/like`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, post_id: postId }),
       })
-
-      if (!res.ok) throw new Error("Ошибка при лайке")
       const result = await res.json()
-
       if (result.message === "liked") {
         setLikes((prev) => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
       } else if (result.message === "unliked") {
@@ -79,63 +67,58 @@ function PostsList() {
         }))
       }
     } catch (err) {
-      console.error("Ошибка при клике лайка:", err)
+      console.error("Ошибка при лайке:", err)
     }
   }
 
-  if (loading) return <p>Загрузка...</p>
+  if (loading) return <p className="loading">Жүктелуде...</p>
 
   return (
-    <div className="posts" style={{ display: "grid", gap: "20px" }}>
+    <div className="posts-grid">
       {posts.map((post) => (
-        <div
-          key={post.id}
-          className="post-card"
-          style={{
-            border: "1px solid #ccc",
-            padding: "20px",
-            borderRadius: "10px",
-            background: "#fff",
-          }}
-        >
-          <h2>{post.title}</h2>
-          <p>{post.body}</p>
-          <p>
-            <b>Категория:</b> {post.category || "—"}
-          </p>
-          <p>
-            <b>Автор:</b> {post.users?.name || "—"}
-          </p>
-
-          {post.image && (
+        <article key={post.id} className="post-card">
+          <div className="post-image-wrapper">
             <img
-              src={post.image}
+              src={
+                post.image ||
+                `https://picsum.photos/seed/${post.id.slice(0, 6)}/800/500`
+              }
               alt={post.title}
-              style={{
-                width: "100%",
-                borderRadius: "8px",
-                marginTop: "10px",
-              }}
+              className="post-image"
             />
-          )}
-
-          <div style={{ marginTop: "10px" }}>
-            <button
-              onClick={() => handleLike(post.id)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "20px",
-              }}
-            >
-              ❤️ {likes[post.id] || 0}
-            </button>
           </div>
-        </div>
+
+          <div className="post-content">
+            <div className="post-meta">
+              <span className="category">{post.category || "Жалпы"}</span>
+              <span className="dot">•</span>
+              <span className="author">
+                {post.users?.name || "Белгісіз автор"}
+              </span>
+            </div>
+
+            <h2 className="post-title">{post.title}</h2>
+            <p className="post-body">
+              {post.body?.length > 140
+                ? post.body.slice(0, 140) + "..."
+                : post.body}
+            </p>
+
+            <div className="post-actions">
+              <button
+                className="like-btn"
+                onClick={() => handleLike(post.id)}
+                aria-label="лайк"
+              >
+                ❤️ {likes[post.id] || 0}
+              </button>
+              <button className="read-btn" onClick={() => alert("Пост ашылады 😉")}>
+                Толығырақ →
+              </button>
+            </div>
+          </div>
+        </article>
       ))}
     </div>
   )
 }
-
-export default PostsList
