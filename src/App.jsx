@@ -86,7 +86,6 @@ function truncate(s, n = 120) { return !s ? '' : (s.length > n ? s.slice(0, n) +
 /* -----------------------------
    App
    ----------------------------- */
-<<<<<<< HEAD
 export default function App() {
   // Data caches
   const [posts, setPosts] = useState([])
@@ -394,172 +393,6 @@ export default function App() {
      ----------------------------- */
   const openPost = useCallback((p) => { setSelectedPostId(p.id); setView('post') }, [])
   const openProfile = useCallback((u) => { setSelectedUserId(u.id); setView('profile') }, [])
-=======
-export default function App(){
-  const [db, setDb] = useState(() => loadDB());
-  const [currentUser, setCurrentUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(USER_KEY) || "null"); } catch { return null; }
-  });
-
-  const [view, setView] = useState("home"); // home, post, login, register, profile, admin
-  const [selectedPostId, setSelectedPostId] = useState(null);
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  const [filterCategory, setFilterCategory] = useState(null);
-
-  useEffect(() => saveDB(db), [db]);
-  useEffect(() => {
-    try { localStorage.setItem(USER_KEY, JSON.stringify(currentUser)); } catch {}
-  }, [currentUser]);
-
-  /* --- Auth --- */
-  const login = useCallback((name, password) => {
-    const u = db.users.find(x => x.name === name && x.password === password);
-    if (!u) return { error: "Қате логин немесе пароль" };
-    setCurrentUser({ id: u.id, name: u.name, role: u.role });
-    setView("home");
-    setSelectedPostId(null);
-    return { ok:true };
-  }, [db]);
-
-  const register = useCallback((name, password) => {
-    name = (name||"").trim(); password = (password||"").trim();
-    if (!name || !password) return { error: "Барлық өрістер толтырылуы керек" };
-    if (db.users.some(u => u.name.toLowerCase() === name.toLowerCase())) return { error: "Пайдаланушы бар" };
-    const u = { id: uid("u_"), name, password, role: "student" };
-    const next = { ...db, users: [u, ...db.users] };
-    setDb(next);
-    setCurrentUser({ id: u.id, name: u.name, role: u.role });
-    setView("home");
-    return { ok:true };
-  }, [db]);
-
-  const logout = useCallback(() => {
-    setCurrentUser(null);
-    localStorage.removeItem(USER_KEY);
-    setView("home");
-    setSelectedPostId(null);
-  }, []);
-
-  /* --- Posts --- */
-  const createPost = useCallback((title, body, category) => {
-    if (!currentUser || currentUser.role === "student") return { error: "Тек мұғалімдер мен админ жариялай алады" };
-    title = (title||"").trim(); body = (body||"").trim(); category = (category||"Жалпы").trim();
-    if (!title || !body) return { error: "Тақырып пен мәтін қажет" };
-    const p = { id: uid("p_"), title, body, authorId: currentUser.id, category, createdAt: now(), likes: [], comments: [], image: `https://picsum.photos/seed/${Math.random().toString(36).slice(2,6)}/1200/800` };
-    setDb(prev => ({ ...prev, posts: [p, ...prev.posts] }));
-    return { ok:true, post: p };
-  }, [currentUser]);
-
-  const deletePost = useCallback((postId) => {
-    if (!currentUser || currentUser.role !== "admin") { alert("Тек админ жоя алады"); return; }
-    if (!window.confirm("Постты жоюға сенімдісіз бе?")) return;
-    setDb(prev => ({ ...prev, posts: prev.posts.filter(p => p.id !== postId) }));
-    if (selectedPostId === postId) { setSelectedPostId(null); setView("home"); }
-  }, [currentUser, selectedPostId]);
-
-  const toggleLike = useCallback((postId) => {
-    if (!currentUser) { alert("Лайк басу үшін кіріңіз"); return; }
-    setDb(prev => {
-      const posts = prev.posts.map(p => {
-        if (p.id !== postId) return p;
-        const liked = p.likes.includes(currentUser.id);
-        return { ...p, likes: liked ? p.likes.filter(id => id !== currentUser.id) : [...p.likes, currentUser.id] };
-      });
-      const next = { ...prev, posts };
-      saveDB(next);
-      return next;
-    });
-  }, [currentUser]);
-
-  /* --- Comments --- */
-  const addComment = useCallback((postId, text, parentId = null) => {
-    if (!currentUser) return { error: "Кіру қажет" };
-    text = (text||"").trim(); if (!text) return { error: "Пікір бос" };
-    const newC = { id: uid("c_"), userId: currentUser.id, text, createdAt: now(), replies: [] };
-    setDb(prev => {
-      const posts = prev.posts.map(p => {
-        if (p.id !== postId) return p;
-        if (!parentId) return { ...p, comments: [...p.comments, newC] };
-        const updatedComments = p.comments.map(c => c.id === parentId ? { ...c, replies: [...(c.replies||[]), newC] } : c);
-        return { ...p, comments: updatedComments };
-      });
-      const next = { ...prev, posts };
-      saveDB(next);
-      return next;
-    });
-    return { ok:true };
-  }, [currentUser]);
-
-  const deleteComment = useCallback((postId, commentId) => {
-    if (!currentUser) { alert("Кіру қажет"); return; }
-    const post = db.posts.find(p => p.id === postId); if (!post) return;
-    const findAuthor = (list, id) => {
-      for (const c of list) {
-        if (c.id === id) return c.userId;
-        if (c.replies && c.replies.length) {
-          const res = findAuthor(c.replies, id);
-          if (res) return res;
-        }
-      }
-      return null;
-    };
-    const authorId = findAuthor(post.comments, commentId);
-    if (!authorId) return;
-    if (!(currentUser.role === "admin" || currentUser.id === authorId)) { alert("Тек автор немесе админ өшіре алады"); return; }
-    if (!window.confirm("Пікірді жоюға сенімдісіз бе?")) return;
-    const remove = (list, id) => list.map(c => {
-      if (c.id === id) return null;
-      if (c.replies && c.replies.length) return { ...c, replies: remove(c.replies, id).filter(Boolean) };
-      return c;
-    }).filter(Boolean);
-    setDb(prev => ({ ...prev, posts: prev.posts.map(p => p.id === postId ? { ...p, comments: remove(p.comments, commentId) } : p) }));
-  }, [currentUser, db]);
-
-  /* --- Admin operations --- */
-  const changeUserRole = useCallback((userId, role) => {
-    if (!currentUser || currentUser.role !== "admin") { alert("Тек админ өзгерте алады"); return; }
-    setDb(prev => ({ ...prev, users: prev.users.map(u => u.id === userId ? { ...u, role } : u) }));
-  }, [currentUser]);
-
-  const deleteUser = useCallback((userId) => {
-    if (!currentUser || currentUser.role !== "admin") { alert("Тек админ жоя алады"); return; }
-    if (!window.confirm("Пайдаланушыны жоюға сенімдісіз бе?")) return;
-    setDb(prev => ({
-      ...prev,
-      users: prev.users.filter(u => u.id !== userId),
-      posts: prev.posts.filter(p => p.authorId !== userId).map(p => ({ ...p, comments: (p.comments||[]).filter(c => c.userId !== userId) }))
-    }));
-  }, [currentUser]);
-
-  const addAnnouncement = useCallback((text) => {
-    if (!currentUser || currentUser.role !== "admin") { alert("Тек админ қосады"); return; }
-    text = (text||"").trim(); if (!text) return alert("Мәтін керек");
-    const a = { id: uid("a_"), authorId: currentUser.id, text, createdAt: now() };
-    setDb(prev => ({ ...prev, announcements: [a, ...(prev.announcements||[])] }));
-  }, [currentUser]);
-
-  /* --- Derived lists --- */
-  const categories = useMemo(() => {
-    const cats = Array.from(new Set((db.posts||[]).map(p => p.category).filter(Boolean)));
-    return [...cats, "Жалпы"];
-  }, [db.posts]);
-
-  const visiblePosts = useMemo(() => (db.posts||[]).slice().sort((a,b)=>b.createdAt - a.createdAt).filter(p => !filterCategory || p.category === filterCategory), [db.posts, filterCategory]);
-
-  const popularPosts = useMemo(() => [...(db.posts||[])].sort((a,b) => (b.likes.length - a.likes.length)).slice(0,5), [db.posts]);
-
-  const userStats = useMemo(() => (db.users||[]).map(u => {
-    const posts = (db.posts||[]).filter(p => p.authorId === u.id);
-    const likes = posts.reduce((s,p)=> s + (p.likes? p.likes.length : 0), 0);
-    return { ...u, postsCount: posts.length, likesReceived: likes, score: posts.length * 2 + likes };
-  }).sort((a,b) => b.score - a.score).slice(0,8), [db.users, db.posts]);
-
-  /* --- UI helpers --- */
-  const openPost = useCallback((p) => { setSelectedPostId(p.id); setView("post"); }, []);
-  const openProfile = useCallback((u) => { setSelectedUserId(u.id); setView("profile"); }, []);
-  const selectedPost = useMemo(() => db.posts.find(p => p.id === selectedPostId) || null, [db.posts, selectedPostId]);
-  const selectedUser = useMemo(() => db.users.find(u => u.id === selectedUserId) || null, [db.users, selectedUserId]);
->>>>>>> 3b86ab0 (дизайн апдейт)
 
   /* -----------------------------
      Render
@@ -567,7 +400,6 @@ export default function App(){
   return (
     <div className="app-root">
       <header className="header" role="banner">
-<<<<<<< HEAD
         <div className="brand" onClick={() => { setView('home'); setSelectedPostId(null); setSelectedUserId(null) }}>BilimShare</div>
 
         <nav className="nav" role="navigation" aria-label="Main">
@@ -582,32 +414,12 @@ export default function App(){
           ) : (
             <>
               <button className="btn ghost small" onClick={() => setView('auth')}>Кіру / Тіркелу</button>
-=======
-        <div className="brand" onClick={() => { setView("home"); setSelectedPostId(null); setSelectedUserId(null); }}>BilimShare</div>
-
-        <nav className="nav" role="navigation" aria-label="Main">
-          <button className="btn ghost small" onClick={() => { setView("home"); setSelectedPostId(null); }}>Home</button>
-
-          {currentUser ? (
-            <>
-              <button className="btn ghost small" onClick={() => openProfile(db.users.find(u => u.id === currentUser.id) || currentUser)}>
-                {currentUser.name} <span className="online-indicator" aria-hidden>●</span>
-              </button>
-              <button className="btn ghost small" onClick={logout}>Шығу</button>
-              {currentUser.role === "admin" && <button className="btn ghost small" onClick={() => setView("admin")}>Admin</button>}
-            </>
-          ) : (
-            <>
-              <button className="btn ghost small" onClick={() => setView("login")}>Кіру</button>
-              <button className="btn ghost small" onClick={() => setView("register")}>Тіркелу</button>
->>>>>>> 3b86ab0 (дизайн апдейт)
             </>
           )}
         </nav>
       </header>
 
       <main className="container" role="main">
-<<<<<<< HEAD
         {/* HOME */}
         {view === 'home' && (
           <>
@@ -615,34 +427,16 @@ export default function App(){
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <div>
                   <h2 className="title" style={{ margin: 0 }}>Жаңа жарияланымдар</h2>
-=======
-        {/* HOME: left posts + right sidebar */}
-        {view === "home" && (
-          <>
-            <section className="posts-column">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                <div>
-                  <h2 className="title" style={{margin:0}}>Жаңа жарияланымдар</h2>
->>>>>>> 3b86ab0 (дизайн апдейт)
                   <div className="text-muted small">Өңірдегі соңғы материалдар</div>
                 </div>
                 <div className="text-muted small">{visiblePosts.length} пост</div>
               </div>
 
-<<<<<<< HEAD
               {(currentUser && currentUser.role !== 'student') && (
                 <div style={{ marginBottom: 12 }}>
                   <NewPostForm categories={categories} onCreate={async (t, b, c) => {
                     const r = await createPost({ title: t, body: b, category: c })
                     if (r && r.error) alert(r.error)
-=======
-              {/* New post form visible only to teacher/admin */}
-              {(currentUser && currentUser.role !== "student") && (
-                <div style={{marginBottom:12}}>
-                  <NewPostForm categories={categories} onCreate={(t,b,c) => {
-                    const r = createPost(t,b,c);
-                    if (r && r.error) alert(r.error);
->>>>>>> 3b86ab0 (дизайн апдейт)
                   }} />
                 </div>
               )}
@@ -651,7 +445,6 @@ export default function App(){
                 {visiblePosts.length === 0 && (
                   <div className="card"><div className="title">Посттар табылмады</div><div className="text-muted">Әзірше ештеңе жоқ</div></div>
                 )}
-<<<<<<< HEAD
                 {visiblePosts.map((post, i) => (
                   <article key={post.id} className="post card" role="listitem" style={{ animationDelay: `${i * 40}ms` }}>
                     <div className="post-cover"><img src={post.image || `https://picsum.photos/seed/${post.id}/1200/800`} alt={post.title} /></div>
@@ -663,22 +456,6 @@ export default function App(){
                         <button className="btn small ghost" onClick={() => toggleLike(post.id)} aria-pressed={Boolean(currentUser && likesMap[post.id] && likesMap[post.id].byUser && likesMap[post.id].byUser.has(currentUser.id))}>❤ {likesMap[post.id]?.count || 0}</button>
                         <button className="btn small" onClick={() => openPost(post)}>Ашып қарау →</button>
                         {currentUser && currentUser.role === 'admin' && <button className="btn small ghost danger" onClick={() => deletePost(post.id)}>Жою</button>}
-=======
-
-                {visiblePosts.map((post, i) => (
-                  <article key={post.id} className="post card" role="listitem" style={{animationDelay: `${i*40}ms`}}>
-                    <div className="post-cover"><img src={post.image || `https://picsum.photos/seed/${post.id}/1200/800`} alt={post.title} /></div>
-
-                    <div className="post-content">
-                      <h3 className="title">{post.title}</h3>
-                      <div className="meta">{timeAgo(post.createdAt)} · Автор: <button className="btn small ghost" onClick={() => openProfile(db.users.find(u => u.id === post.authorId))}>{db.users.find(u => u.id === post.authorId)?.name || "Белгісіз"}</button> · <span className="text-muted small">{post.category}</span></div>
-                      <p className="excerpt">{truncate(post.body, 200)}</p>
-
-                      <div className="post-footer">
-                        <button className="btn small ghost" onClick={() => toggleLike(post.id)} aria-pressed={currentUser ? post.likes.includes(currentUser.id) : false}>❤ {post.likes.length}</button>
-                        <button className="btn small" onClick={() => openPost(post)}>Ашып қарау →</button>
-                        {currentUser && currentUser.role === "admin" && <button className="btn small ghost danger" onClick={() => deletePost(post.id)}>Жою</button>}
->>>>>>> 3b86ab0 (дизайн апдейт)
                       </div>
                     </div>
                   </article>
@@ -687,32 +464,21 @@ export default function App(){
             </section>
 
             <aside className="sidebar" aria-label="Sidebar">
-<<<<<<< HEAD
               <div className="sidebar-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-=======
-              <div className="sidebar-section" style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
->>>>>>> 3b86ab0 (дизайн апдейт)
                 <div className="small">Фильтр / Категория</div>
                 <button className="btn small ghost" onClick={() => setFilterCategory(null)}>Тазалау</button>
               </div>
 
               <div className="sidebar-section">
                 <div className="small">Категориялар</div>
-<<<<<<< HEAD
                 <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <button className="btn small ghost" style={{ justifyContent: 'flex-start' }} onClick={() => setFilterCategory(null)}>Барлығы</button>
                   {categories.map(c => <button key={c} className="btn small ghost" style={{ justifyContent: 'flex-start' }} onClick={() => setFilterCategory(c)}>{c} <span style={{ marginLeft: 8, color: 'var(--muted)' }}>({(posts || []).filter(p => p.category === c).length})</span></button>)}
-=======
-                <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:8}}>
-                  <button className="btn small ghost" style={{justifyContent:"flex-start"}} onClick={() => setFilterCategory(null)}>Барлығы</button>
-                  {categories.map(c => <button key={c} className="btn small ghost" style={{justifyContent:"flex-start"}} onClick={() => setFilterCategory(c)}>{c} <span style={{marginLeft:8,color:"var(--muted)"}}>({(db.posts||[]).filter(p => p.category===c).length})</span></button>)}
->>>>>>> 3b86ab0 (дизайн апдейт)
                 </div>
               </div>
 
               <div className="sidebar-section">
                 <div className="small">Топ қолданушылар</div>
-<<<<<<< HEAD
                 <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {userStats.map(u => (
                     <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -720,15 +486,6 @@ export default function App(){
                         <div className="avatar" style={{ width: 36, height: 36, fontSize: 13 }}>{u.name.split(' ').map(x => x[0]).join('').toUpperCase()}</div>
                         <div>
                           <div style={{ fontWeight: 700 }}>{u.name}</div>
-=======
-                <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:8}}>
-                  {userStats.map(u => (
-                    <div key={u.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                        <div className="avatar" style={{width:36,height:36,fontSize:13}}>{u.name.split(" ").map(x=>x[0]).join("").toUpperCase()}</div>
-                        <div>
-                          <div style={{fontWeight:700}}>{u.name}</div>
->>>>>>> 3b86ab0 (дизайн апдейт)
                           <div className="text-muted small">{u.role} · {u.postsCount} пост</div>
                         </div>
                       </div>
@@ -739,7 +496,6 @@ export default function App(){
               </div>
 
               <div className="sidebar-section">
-<<<<<<< HEAD
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className="small">Популярные посты</div>
                 </div>
@@ -747,22 +503,12 @@ export default function App(){
                   {popularPosts.map(p => (
                     <li key={p.id} style={{ marginBottom: 8 }}>
                       <button className="btn small ghost" style={{ justifyContent: 'flex-start', width: '100%' }} onClick={() => openPost(p)}>{truncate(p.title, 48)} <span className="text-muted small" style={{ marginLeft: 8 }}>❤{likesMap[p.id]?.count || 0}</span></button>
-=======
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div className="small">Популярные посты</div>
-                </div>
-                <ul style={{marginTop:8,listStyle:"none",padding:0}}>
-                  {popularPosts.map(p => (
-                    <li key={p.id} style={{marginBottom:8}}>
-                      <button className="btn small ghost" style={{justifyContent:"flex-start",width:"100%"}} onClick={() => openPost(p)}>{truncate(p.title,48)} <span className="text-muted small" style={{marginLeft:8}}>❤{p.likes.length}</span></button>
->>>>>>> 3b86ab0 (дизайн апдейт)
                     </li>
                   ))}
                 </ul>
               </div>
 
               <div className="sidebar-section">
-<<<<<<< HEAD
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div className="small">Хабарландырулар</div>
                   {currentUser && currentUser.role === 'admin' && <button className="btn small" onClick={() => {
@@ -771,22 +517,6 @@ export default function App(){
                 </div>
                 <div style={{ marginTop: 8 }}>
                   <div className="text-muted small">(Хабарландырулар этой демо-версии хранятся в таблице posts или можно завести свою таблицу 'announcements')</div>
-=======
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div className="small">Хабарландырулар</div>
-                  {currentUser && currentUser.role === "admin" && <button className="btn small" onClick={() => {
-                    const text = prompt("Хабарландыру мәтінін енгізіңіз:");
-                    if (text) addAnnouncement(text);
-                  }}>Жаңа</button>}
-                </div>
-                <div style={{marginTop:8}}>
-                  {(!db.announcements || db.announcements.length === 0) ? <div className="text-muted small">Хабар жоқ</div> : (db.announcements||[]).slice(0,5).map(a => (
-                    <div key={a.id} style={{marginBottom:8}}>
-                      <div style={{fontWeight:700}}>{truncate(a.text, 80)}</div>
-                      <div className="text-muted small">{timeAgo(a.createdAt)}</div>
-                    </div>
-                  ))}
->>>>>>> 3b86ab0 (дизайн апдейт)
                 </div>
               </div>
             </aside>
@@ -794,7 +524,6 @@ export default function App(){
         )}
 
         {/* POST VIEW */}
-<<<<<<< HEAD
         {view === 'post' && selectedPost && (
           <PostView post={selectedPost} usersMap={usersMap} currentUser={currentUser} comments={commentsByPost[selectedPost.id] || []} likes={likesMap[selectedPost.id]} onLike={toggleLike} onBack={() => { setView('home'); setSelectedPostId(null) }} onComment={addComment} onDeleteComment={deleteComment} onDeletePost={deletePost} onOpenProfile={openProfile} />
         )}
@@ -807,28 +536,12 @@ export default function App(){
 
         {/* ADMIN */}
         {view === 'admin' && currentUser && currentUser.role === 'admin' && <AdminPanel users={Object.values(usersMap)} posts={posts} onChangeRole={changeUserRole} onDeleteUser={deleteUser} onBack={() => setView('home')} onDeletePost={deletePost} />}
-=======
-        {view === "post" && selectedPost && (
-          <PostView post={selectedPost} db={db} currentUser={currentUser} onLike={toggleLike} onBack={() => { setView("home"); setSelectedPostId(null); }} onComment={addComment} onDeleteComment={deleteComment} onDeletePost={deletePost} onOpenProfile={openProfile} />
-        )}
-
-        {/* AUTH */}
-        {view === "login" && <AuthCard mode="login" onLogin={({name,password}) => { const r = login(name,password); if (r && r.error) alert(r.error); }} onBack={() => setView("home")} switchToRegister={() => setView("register")} />}
-        {view === "register" && <AuthCard mode="register" onRegister={({name,password}) => { const r = register(name,password); if (r && r.error) alert(r.error); }} onBack={() => setView("home")} switchToLogin={() => setView("login")} />}
-
-        {/* PROFILE */}
-        {view === "profile" && selectedUser && <ProfileView user={selectedUser} db={db} currentUser={currentUser} onBack={() => { setView("home"); setSelectedUserId(null); }} onOpenPost={(p) => { setSelectedPostId(p.id); setView("post"); }} />}
-
-        {/* ADMIN */}
-        {view === "admin" && currentUser && currentUser.role === "admin" && <AdminPanel db={db} onChangeRole={changeUserRole} onDeleteUser={deleteUser} onBack={() => setView("home")} onDeletePost={deletePost} />}
->>>>>>> 3b86ab0 (дизайн апдейт)
       </main>
 
       <div className="footer-wrapper">
         <div className="footer">© 2025 BilimShare. Барлық құқықтар қорғалған.</div>
       </div>
     </div>
-<<<<<<< HEAD
   )
 }
 
@@ -861,40 +574,10 @@ function AuthCard({ onLogin, onRegister, onBack }) {
             <button className="btn" onClick={async () => { const r = await onRegister({ name, email, password }); if (r && r.error) alert(r.error) }}>Тіркелу</button>
             <button className="btn ghost small" onClick={onBack}>Артқа</button>
             <button className="btn small ghost" onClick={() => setMode('login')}>Кіру</button>
-=======
-  );
-}
-
-/* -----------------------------
-   Components
-   ----------------------------- */
-
-function AuthCard({ mode="login", onLogin, onRegister, onBack, switchToRegister, switchToLogin }) {
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  return (
-    <div className="card auth-card" role="form" aria-label={mode === "login" ? "Login form" : "Register form"}>
-      <h3 className="title">{mode === "login" ? "Кіру" : "Тіркелу"}</h3>
-      <input className="input" placeholder="Атыңыз" value={name} onChange={(e)=>setName(e.target.value)} />
-      <input className="input" placeholder="Құпиясөз" type="password" value={password} onChange={(e)=>setPassword(e.target.value)} />
-      <div style={{display:"flex",gap:8,marginTop:8}}>
-        {mode === "login" ? (
-          <>
-            <button className="btn" onClick={()=> onLogin && onLogin({name,password})}>Кіру</button>
-            <button className="btn ghost small" onClick={onBack}>Артқа</button>
-            <button className="btn small ghost" onClick={switchToRegister}>Тіркелу</button>
-          </>
-        ) : (
-          <>
-            <button className="btn" onClick={()=> onRegister && onRegister({name,password})}>Тіркелу</button>
-            <button className="btn ghost small" onClick={onBack}>Артқа</button>
-            <button className="btn small ghost" onClick={switchToLogin}>Кіру</button>
->>>>>>> 3b86ab0 (дизайн апдейт)
           </>
         )}
       </div>
     </div>
-<<<<<<< HEAD
   )
 }
 
@@ -961,78 +644,12 @@ function PostView({ post, usersMap, currentUser, comments = [], likes, onLike, o
                 if (!text.trim()) return alert('Пікір жазу керек')
                 const r = await onComment(post.id, text.trim())
                 if (r && r.error) alert(r.error); else setText('')
-=======
-  );
-}
-
-function NewPostForm({ categories = [], onCreate }) {
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [category, setCategory] = useState(categories[0] || "Жалпы");
-  return (
-    <div className="card upload-card" aria-label="New post">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div style={{fontWeight:700}}>Жаңа пост</div>
-        <div className="text-muted small">Категория</div>
-      </div>
-      <input className="input" placeholder="Тақырып" value={title} onChange={(e)=>setTitle(e.target.value)} />
-      <textarea className="input" placeholder="Мәтін" value={body} onChange={(e)=>setBody(e.target.value)} />
-      <select className="input" value={category} onChange={(e)=>setCategory(e.target.value)}>
-        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-      </select>
-      <div style={{display:"flex",gap:8}}>
-        <button className="btn" onClick={()=>{
-          if (!title || !body) return alert("Тақырып пен мәтін қажет");
-          if (onCreate) onCreate(title, body, category);
-          setTitle(""); setBody("");
-        }}>Жариялау</button>
-      </div>
-    </div>
-  );
-}
-
-function PostView({ post, db, currentUser, onLike, onBack, onComment, onDeleteComment, onDeletePost, onOpenProfile }) {
-  const [text, setText] = useState("");
-  if (!post) return null;
-  return (
-    <div className="card post-view">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <button className="btn ghost small" onClick={onBack}>← Артқа</button>
-        {currentUser && currentUser.role === "admin" && <button className="btn small ghost danger" onClick={()=> onDeletePost(post.id)}>Постты жою</button>}
-      </div>
-
-      <h2 className="title" style={{marginTop:8}}>{post.title}</h2>
-      <div className="meta">{timeAgo(post.createdAt)} · Автор: <button className="btn small ghost" onClick={() => onOpenProfile(db.users.find(u => u.id === post.authorId))}>{db.users.find(u => u.id === post.authorId)?.name || "Белгісіз"}</button> · <span className="text-muted small">{post.category}</span></div>
-      <div style={{marginTop:12}}><img style={{width:"100%",borderRadius:8,maxHeight:420,objectFit:"cover"}} src={post.image} alt={post.title} /></div>
-      <p style={{marginTop:12}}>{post.body}</p>
-
-      <div style={{marginTop:12,display:"flex",gap:8}}>
-        <button className="btn small ghost" onClick={()=> onLike(post.id)}>❤ {post.likes.length}</button>
-      </div>
-
-      <section style={{marginTop:18}}>
-        <h4>Пікірлер ({post.comments.length})</h4>
-        <div style={{marginTop:12}}>
-          {post.comments.length === 0 && <div className="text-muted small">Пікір жоқ</div>}
-          {post.comments.map(c => <Comment key={c.id} comment={c} db={db} currentUser={currentUser} postId={post.id} onComment={onComment} onDeleteComment={onDeleteComment} onOpenProfile={onOpenProfile} />)}
-        </div>
-
-        {(currentUser && ["student","teacher","admin"].includes(currentUser.role)) && (
-          <div className="comment-form" style={{marginTop:12}}>
-            <textarea className="input" rows={3} placeholder="Пікір жазыңыз..." value={text} onChange={(e)=>setText(e.target.value)} />
-            <div style={{display:"flex",gap:8,marginTop:6}}>
-              <button className="btn small" onClick={() => {
-                if (!text.trim()) return alert("Пікір жазу керек");
-                const r = onComment(post.id, text.trim());
-                if (r && r.error) alert(r.error); else setText("");
->>>>>>> 3b86ab0 (дизайн апдейт)
               }}>Жіберу</button>
             </div>
           </div>
         )}
       </section>
     </div>
-<<<<<<< HEAD
   )
 }
 
@@ -1042,22 +659,10 @@ function Comment({ comment, usersMap, currentUser, postId, onComment, onDeleteCo
   const author = usersMap[comment.author] || { name: 'Аноним' }
   const canDelete = currentUser && (currentUser.role === 'admin' || currentUser.id === comment.author)
   const canReply = currentUser && ['student', 'teacher', 'admin'].includes(currentUser.role)
-=======
-  );
-}
-
-function Comment({ comment, db, currentUser, postId, onComment, onDeleteComment, onOpenProfile, level = 0 }) {
-  const [showReply, setShowReply] = useState(false);
-  const [reply, setReply] = useState("");
-  const author = db.users.find(u => u.id === comment.userId) || { name: "Аноним" };
-  const canDelete = currentUser && (currentUser.role === "admin" || currentUser.id === comment.userId);
-  const canReply = currentUser && ["student","teacher","admin"].includes(currentUser.role);
->>>>>>> 3b86ab0 (дизайн апдейт)
 
   return (
     <div className="comment" style={{ marginLeft: level * 18 }}>
       <div className="meta">
-<<<<<<< HEAD
         <button className="btn small ghost" onClick={() => onOpenProfile(author)}>{author.name}</button> · {timeAgo(comment.created_at)}
         {canDelete && <button className="btn small ghost danger" style={{ marginLeft: 8 }} onClick={() => onDeleteComment(comment.id)}>Жою</button>}
       </div>
@@ -1075,30 +680,10 @@ function Comment({ comment, db, currentUser, postId, onComment, onDeleteComment,
               if (r && r.error) alert(r.error); else { setReply(''); setShowReply(false) }
             }}>Жіберу</button>
             <button className="btn small ghost" onClick={() => { setReply(''); setShowReply(false) }}>Болдырмау</button>
-=======
-        <button className="btn small ghost" onClick={() => onOpenProfile(author)}>{author.name}</button> · {timeAgo(comment.createdAt)}
-        {canDelete && <button className="btn small ghost danger" style={{marginLeft:8}} onClick={() => onDeleteComment(postId, comment.id)}>Жою</button>}
-      </div>
-      <p style={{marginTop:6}}>{comment.text}</p>
-
-      {canReply && <button className="btn small ghost" onClick={() => setShowReply(s => !s)}>{showReply ? "Болдырмау" : "Жауап беру"}</button>}
-
-      {showReply && (
-        <div className="reply-form">
-          <textarea className="input" rows={3} value={reply} onChange={(e)=>setReply(e.target.value)} />
-          <div style={{display:"flex",gap:8,marginTop:6}}>
-            <button className="btn small" onClick={() => {
-              if (!reply.trim()) return alert("Пікір жазу керек");
-              const r = onComment(postId, reply.trim(), comment.id);
-              if (r && r.error) alert(r.error); else { setReply(""); setShowReply(false); }
-            }}>Жіберу</button>
-            <button className="btn small ghost" onClick={() => { setReply(""); setShowReply(false); }}>Болдырмау</button>
->>>>>>> 3b86ab0 (дизайн апдейт)
           </div>
         </div>
       )}
 
-<<<<<<< HEAD
       {/* If there are nested replies they will be shown by parent loader (comments are flat in this demo) */}
     </div>
   )
@@ -1114,38 +699,15 @@ function ProfileView({ user, posts, currentUser, onBack, onOpenPost }) {
         <div className="avatar" style={{ width: 64, height: 64, fontSize: 18 }}>{user.name.split(' ').map(x => x[0]).join('').toUpperCase()}</div>
         <div>
           <div className="title" style={{ margin: 0 }}>{user.name}</div>
-=======
-      {comment.replies && comment.replies.length > 0 && comment.replies.map(r => <Comment key={r.id} comment={r} db={db} currentUser={currentUser} postId={postId} onComment={onComment} onDeleteComment={onDeleteComment} onOpenProfile={onOpenProfile} level={level + 1} />)}
-    </div>
-  );
-}
-
-function ProfileView({ user, db, currentUser, onBack, onOpenPost }) {
-  if (!user) return null;
-  const posts = (db.posts||[]).filter(p => p.authorId === user.id);
-  return (
-    <div className="card profile-card" style={{maxWidth:1200,margin:"0 auto"}}>
-      <button className="btn ghost small" onClick={onBack}>← Артқа</button>
-
-      <div style={{display:"flex",gap:12,alignItems:"center",marginTop:8}}>
-        <div className="avatar" style={{width:64,height:64,fontSize:18}}>{user.name.split(" ").map(x=>x[0]).join("").toUpperCase()}</div>
-        <div>
-          <div className="title" style={{margin:0}}>{user.name}</div>
->>>>>>> 3b86ab0 (дизайн апдейт)
           <div className="meta">Роль: {user.role}</div>
         </div>
       </div>
 
-<<<<<<< HEAD
       <section style={{ marginTop: 12 }}>
-=======
-      <section style={{marginTop:12}}>
->>>>>>> 3b86ab0 (дизайн апдейт)
         <h4>Жазбалары ({posts.length})</h4>
         <div className="profile-posts">
           {posts.length === 0 && <div className="text-muted">Посттар жоқ</div>}
           {posts.map(p => (
-<<<<<<< HEAD
             <article key={p.id} className="post card" style={{ padding: 0 }}>
               <div className="post-cover" style={{ height: 140 }}>
                 <img src={p.image || `https://picsum.photos/seed/${p.id}/1200/800`} alt={p.title} />
@@ -1155,17 +717,6 @@ function ProfileView({ user, db, currentUser, onBack, onOpenPost }) {
                 <div className="meta">{timeAgo(p.created_at)}</div>
                 <p className="excerpt">{truncate(p.body, 120)}</p>
                 <div style={{ marginTop: 8 }}>
-=======
-            <article key={p.id} className="post card" style={{padding:0}}>
-              <div className="post-cover" style={{height:140}}>
-                <img src={p.image} alt={p.title} />
-              </div>
-              <div className="post-content">
-                <h3 className="title" style={{fontSize:16}}>{p.title}</h3>
-                <div className="meta">{timeAgo(p.createdAt)}</div>
-                <p className="excerpt">{truncate(p.body, 120)}</p>
-                <div style={{marginTop:8}}>
->>>>>>> 3b86ab0 (дизайн апдейт)
                   <button className="btn small" onClick={() => onOpenPost(p)}>Ашып қарау →</button>
                 </div>
               </div>
@@ -1174,7 +725,6 @@ function ProfileView({ user, db, currentUser, onBack, onOpenPost }) {
         </div>
       </section>
     </div>
-<<<<<<< HEAD
   )
 }
 
@@ -1182,20 +732,10 @@ function AdminPanel({ users = [], posts = [], onChangeRole, onDeleteUser, onBack
   return (
     <div className="card" style={{ maxWidth: 1000, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-=======
-  );
-}
-
-function AdminPanel({ db, onChangeRole, onDeleteUser, onBack, onDeletePost }) {
-  return (
-    <div className="card" style={{maxWidth:1000,margin:"0 auto"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
->>>>>>> 3b86ab0 (дизайн апдейт)
         <h3 className="title">Admin панелі</h3>
         <button className="btn small ghost" onClick={onBack}>Ортаға қайту</button>
       </div>
 
-<<<<<<< HEAD
       <section style={{ marginTop: 12 }}>
         <h4>Қолданушылар</h4>
         <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1207,19 +747,6 @@ function AdminPanel({ db, onChangeRole, onDeleteUser, onBack, onDeletePost }) {
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <select value={u.role} onChange={(e) => onChangeRole(u.id, e.target.value)}>
-=======
-      <section style={{marginTop:12}}>
-        <h4>Қолданушылар</h4>
-        <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:8}}>
-          {db.users.map(u => (
-            <div key={u.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-              <div>
-                <div style={{fontWeight:700}}>{u.name}</div>
-                <div className="text-muted small">role: {u.role}</div>
-              </div>
-              <div style={{display:"flex",gap:8}}>
-                <select value={u.role} onChange={(e)=> onChangeRole(u.id, e.target.value)}>
->>>>>>> 3b86ab0 (дизайн апдейт)
                   <option value="student">student</option>
                   <option value="teacher">teacher</option>
                   <option value="admin">admin</option>
@@ -1231,7 +758,6 @@ function AdminPanel({ db, onChangeRole, onDeleteUser, onBack, onDeletePost }) {
         </div>
       </section>
 
-<<<<<<< HEAD
       <section style={{ marginTop: 16 }}>
         <h4>Барлық жарияланымдар</h4>
         <div style={{ marginTop: 8 }}>
@@ -1242,18 +768,6 @@ function AdminPanel({ db, onChangeRole, onDeleteUser, onBack, onDeletePost }) {
                 <div className="text-muted small">Автор: {p.author} · {timeAgo(p.created_at)}</div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-=======
-      <section style={{marginTop:16}}>
-        <h4>Барлық жарияланымдар</h4>
-        <div style={{marginTop:8}}>
-          {db.posts.map(p => (
-            <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:8,borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
-              <div>
-                <div style={{fontWeight:700}}>{p.title}</div>
-                <div className="text-muted small">Автор: {db.users.find(u => u.id === p.authorId)?.name || "Белгісіз"} · {timeAgo(p.createdAt)}</div>
-              </div>
-              <div style={{display:"flex",gap:8}}>
->>>>>>> 3b86ab0 (дизайн апдейт)
                 <button className="btn small" onClick={() => onDeletePost(p.id)}>Жою</button>
               </div>
             </div>
@@ -1261,9 +775,5 @@ function AdminPanel({ db, onChangeRole, onDeleteUser, onBack, onDeletePost }) {
         </div>
       </section>
     </div>
-<<<<<<< HEAD
   )
-=======
-  );
->>>>>>> 3b86ab0 (дизайн апдейт)
 }
