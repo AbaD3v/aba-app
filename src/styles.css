@@ -213,4 +213,52 @@ textarea.input{ min-height:100px; resize:vertical }
     width: 100%;
   }
 }
+/* Главный контейнер: посты по центру, сайдбар прижат к правому краю */
+.container {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 24px;
+  align-items: start;
+}
+
+/* Колонка с постами — центрируем */
+.posts-column {
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+/* Сайдбар прижат к правому краю */
+.sidebar {
+  position: sticky;
+  top: 100px;
+  align-self: start;
+  justify-self: end;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 16px;
+  width: 320px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  backdrop-filter: blur(6px);
+}
+
+/* Адаптив: на мобильных — под постами */
+@media (max-width: 1100px) {
+  .container {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .sidebar {
+    position: static;
+    width: 100%;
+    margin-top: 24px;
+  }
+}
+
 
