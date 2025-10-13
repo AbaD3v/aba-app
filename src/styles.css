@@ -172,14 +172,6 @@ textarea.input{ min-height:100px; resize:vertical }
 
 /* Focus helpers */
 .input:focus, textarea.input:focus, select:focus{ outline: 3px solid rgba(var(--accent-rgb),0.12); outline-offset: 2px; border-color: rgba(var(--accent-rgb),0.28); }
-.sidebar {
-  display: none;
-}
-.container {
-  display: block;
-  max-width: 900px;
-  margin: 0 auto;
-}
 /* Контейнер для контента и сайдбара */
 .container {
   display: grid;
@@ -221,3 +213,4 @@ textarea.input{ min-height:100px; resize:vertical }
     width: 100%;
   }
 }
+
