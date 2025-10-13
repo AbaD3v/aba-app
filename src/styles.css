@@ -137,6 +137,7 @@ header.header{
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: transform 240ms ease, box-shadow 240ms ease, border 240ms ease;
   /* новый минимум: карточка выше по оси Y (примерно в 2 раза больше обычной) */
+  min-width: 300px;
   min-height: 640px;
 }
 
@@ -150,6 +151,7 @@ header.header{
 .post-cover {
   /* увеличено в 2 раза (раньше 200px/260px в разных местах) → теперь 400px */
   height: 400px;
+  width: 200px;
   overflow: hidden;
   background: #0d0d0d;
 }
@@ -169,6 +171,7 @@ header.header{
   /* чуть больше пространства + минимальная высота, чтобы контент занимал половину итоговой высоты */
   padding: 20px;
   min-height: 240px;
+  min-width: 300px;
 }
 
 .title {
