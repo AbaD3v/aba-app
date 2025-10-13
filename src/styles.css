@@ -136,6 +136,8 @@ header.header{
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: transform 240ms ease, box-shadow 240ms ease, border 240ms ease;
+  /* новый минимум: карточка выше по оси Y (примерно в 2 раза больше обычной) */
+  min-height: 640px;
 }
 
 .post.card:hover {
@@ -146,7 +148,8 @@ header.header{
 
 /* ====== ОБЛОЖКА ====== */
 .post-cover {
-  height: 260px;
+  /* увеличено в 2 раза (раньше 200px/260px в разных местах) → теперь 400px */
+  height: 400px;
   overflow: hidden;
   background: #0d0d0d;
 }
@@ -163,7 +166,9 @@ header.header{
 
 /* ====== КОНТЕНТ ====== */
 .post-content {
-  padding: 16px; /* чуть больше пространства для текста */
+  /* чуть больше пространства + минимальная высота, чтобы контент занимал половину итоговой высоты */
+  padding: 20px;
+  min-height: 240px;
 }
 
 .title {
@@ -216,7 +221,7 @@ header.header{
 
 @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
 
-.post-cover { width: 100%; height: 200px; overflow: hidden; background: #0d0d0d; }
+.post-cover { width: 100%; height: 400px; overflow: hidden; background: #0d0d0d; }
 .post-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 360ms cubic-bezier(.2,.9,.3,1); }
 .post:hover .post-cover img { transform: scale(1.04); }
 
