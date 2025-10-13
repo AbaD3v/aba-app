@@ -81,96 +81,134 @@ header.header{
 .header .nav .btn:hover{ background:var(--accent-strong); color:#111; }
 
 /* Container: left flexible + right fixed */
-main.container{
-  max-width:1500px;
-  margin: 0 auto;
-  padding: calc(var(--header-h) + 20px) 18px 100px;
-  min-height: calc(100vh - var(--header-h) - 80px);
+/* ====== ОСНОВНОЕ РАЗМЕЩЕНИЕ ====== */
+.container {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 20px;
-  align-items: start;
+  grid-template-columns: 1fr 320px; /* 1 — контент, 2 — сайдбар */
+  gap: 32px;
+  width: 100%;
+  max-width: 1800px; /* ширина всей страницы */
+  margin: 0 auto;
+  padding: 0 32px;
 }
 
-/* Левая колонка */
+/* ====== ЛЕВАЯ КОЛОНКА (ПОСТЫ) ====== */
 .posts-column {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   flex: 1;
 }
 
-/* Сетка постов — динамическая ширина */
+/* ====== СЕТКА ПОСТОВ ====== */
 .posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 28px;
   width: 100%;
 }
 
-/* --- Чтобы при широком экране было больше постов --- */
-@media (min-width: 1400px) {
+/* Больше карточек на экране при больших ширинах */
+@media (min-width: 1300px) {
+  .posts-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1600px) {
   .posts-grid {
     grid-template-columns: repeat(4, 1fr);
   }
 }
-@media (min-width: 1800px) {
+@media (min-width: 1900px) {
   .posts-grid {
     grid-template-columns: repeat(5, 1fr);
   }
 }
 
-/* Карточка поста */
+/* ====== КАРТОЧКА ПОСТА ====== */
 .post.card {
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  background: #1b1b1b; /* тёмный фон */
+  color: #f2f2f2;
+  border-radius: 14px;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.post.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
 }
 
-/* Обложка поста */
+.post.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ====== ОБЛОЖКА ====== */
 .post-cover img {
   width: 100%;
-  height: 200px;
+  height: 220px;
   object-fit: cover;
+  transition: transform 0.4s ease;
 }
 
-/* Контент поста */
+.post.card:hover .post-cover img {
+  transform: scale(1.05);
+}
+
+/* ====== КОНТЕНТ ====== */
 .post-content {
-  padding: 16px;
+  padding: 16px 18px;
 }
 
-/* Основа карточки */
-.card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border-radius: var(--radius);
-  padding: 16px;
-  box-shadow: var(--shadow-soft);
-  border: 1px solid rgba(255,255,255,0.03);
-  transition: transform var(--transition), box-shadow var(--transition);
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: #fff;
 }
-.card:hover { transform: translateY(-3px); }
 
-/* Отдельные стили поста */
-.post {
+.meta {
+  color: #aaa;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.excerpt {
+  color: #ddd;
+  margin-top: 10px;
+  line-height: 1.4;
+}
+
+.post-footer {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 0;
-  overflow: hidden;
-  border-radius: 12px;
-  background: transparent;
-  opacity: 0;
-  transform: translateY(8px);
-  animation: cardIn 380ms cubic-bezier(.2,.9,.3,1) forwards;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
 }
+
+/* ====== САЙДБАР ====== */
+.sidebar {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.03);
+}
+
+/* ====== АНИМАЦИЯ ВХОДА ====== */
+.post {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeUp 0.4s ease forwards;
+}
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
 
 .post-cover { width: 100%; height: 200px; overflow: hidden; background: #0d0d0d; }
