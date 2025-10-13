@@ -84,10 +84,11 @@ header.header{
 /* ====== ОСНОВНОЕ РАЗМЕЩЕНИЕ ====== */
 .container {
   display: grid;
-  grid-template-columns: 1fr 320px; /* 1 — контент, 2 — сайдбар */
+  /* основной столбец даём больше места, чтобы posts-column был шире */
+  grid-template-columns: 1.6fr 320px; /* раньше: 1fr 320px */
   gap: 32px;
   width: 100%;
-  max-width: 1800px; /* ширина всей страницы */
+  max-width: 1800px;
   margin: 0 auto;
   padding: 0 32px;
 }
@@ -274,9 +275,9 @@ textarea.input{ min-height:100px; resize:vertical }
   padding: 24px;
 }
 
-/* Основная колонка с постами */
+/* Основная колонка с постами (увеличен максимум ширины) */
 .posts-column {
-  max-width: 1100px;
+  max-width: 1400px; /* раньше было 900px/1100px — увеличено */
   width: 100%;
   margin: 0 auto;
 }
@@ -308,7 +309,8 @@ textarea.input{ min-height:100px; resize:vertical }
 /* Главный контейнер: посты по центру, сайдбар прижат к правому краю */
 .container {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  /* синхронизировано с первым изменением: даём основной колонке больше пространства */
+  grid-template-columns: 1.6fr 320px; /* раньше: 1fr 320px */
   gap: 24px;
   max-width: 1600px;
   margin: 0 auto;
@@ -354,10 +356,10 @@ textarea.input{ min-height:100px; resize:vertical }
 }
 .container {
   display: grid;
-  grid-template-columns: 1fr 320px; /* контент + сайдбар */
+  grid-template-columns: 1.6fr 320px; /* контент + сайдбар — увеличенная доля контента */
   gap: 24px;
-  width: 100vw;       /* вся ширина окна */
-  max-width: none;    /* убираем ограничение */
+  width: 100vw;
+  max-width: none;
   margin: 0;
   padding: 0 24px;
 }
