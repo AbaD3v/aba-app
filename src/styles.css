@@ -103,8 +103,8 @@ header.header{
 /* ====== СЕТКА ПОСТОВ ====== */
 .posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 28px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 32px; /* немного больше промежуток для визуального баланса */
   width: 100%;
 }
 
@@ -135,7 +135,7 @@ header.header{
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+  transition: transform 240ms ease, box-shadow 240ms ease, border 240ms ease;
 }
 
 .post.card:hover {
@@ -145,11 +145,16 @@ header.header{
 }
 
 /* ====== ОБЛОЖКА ====== */
+.post-cover {
+  height: 260px;
+  overflow: hidden;
+  background: #0d0d0d;
+}
 .post-cover img {
   width: 100%;
-  height: 220px;
+  height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 360ms cubic-bezier(.2,.9,.3,1);
 }
 
 .post.card:hover .post-cover img {
@@ -158,11 +163,11 @@ header.header{
 
 /* ====== КОНТЕНТ ====== */
 .post-content {
-  padding: 16px 18px;
+  padding: 16px; /* чуть больше пространства для текста */
 }
 
 .title {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
   margin: 0;
   color: #fff;
