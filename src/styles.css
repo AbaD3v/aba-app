@@ -180,3 +180,44 @@ textarea.input{ min-height:100px; resize:vertical }
   max-width: 900px;
   margin: 0 auto;
 }
+/* Контейнер для контента и сайдбара */
+.container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Основная колонка с постами */
+.posts-column {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Сайдбар */
+.sidebar {
+  background: rgba(255,255,255,0.03);
+  border-radius: 16px;
+  padding: 16px;
+  height: fit-content;
+  position: sticky;
+  top: 100px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.05);
+}
+
+/* Адаптив для телефонов */
+@media (max-width: 1000px) {
+  .container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: static;
+    margin-top: 24px;
+    width: 100%;
+  }
+}
