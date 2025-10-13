@@ -103,7 +103,8 @@ header.header{
 /* ====== СЕТКА ПОСТОВ ====== */
 .posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  /* увеличено: карточки стали в 2 раза шире (680px) */
+  grid-template-columns: repeat(auto-fill, minmax(680px, 1fr));
   gap: 32px; /* немного больше промежуток для визуального баланса */
   width: 100%;
 }
@@ -136,22 +137,13 @@ header.header{
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: transform 240ms ease, box-shadow 240ms ease, border 240ms ease;
-  /* новый минимум: карточка выше по оси Y (примерно в 2 раза больше обычной) */
-  min-width: 300px;
-  min-height: 640px;
-}
-
-.post.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  border-color: rgba(255, 255, 255, 0.1);
+  /* убраны min-width/min-height — ширина контролируется гридом */
 }
 
 /* ====== ОБЛОЖКА ====== */
 .post-cover {
-  /* увеличено в 2 раза (раньше 200px/260px в разных местах) → теперь 400px */
-  height: 400px;
-  width: 200px;
+  /* восстановлена исходная высота обложки */
+  height: 220px;
   overflow: hidden;
   background: #0d0d0d;
 }
@@ -168,10 +160,8 @@ header.header{
 
 /* ====== КОНТЕНТ ====== */
 .post-content {
-  /* чуть больше пространства + минимальная высота, чтобы контент занимал половину итоговой высоты */
-  padding: 20px;
-  min-height: 240px;
-  min-width: 300px;
+  /* убрать минимальные размеры, вернуть обычные отступы */
+  padding: 16px;
 }
 
 .title {
@@ -224,11 +214,11 @@ header.header{
 
 @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
 
-.post-cover { width: 100%; height: 400px; overflow: hidden; background: #0d0d0d; }
+.post-cover { width: 100%; height: 220px; overflow: hidden; background: #0d0d0d; }
 .post-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 360ms cubic-bezier(.2,.9,.3,1); }
 .post:hover .post-cover img { transform: scale(1.04); }
 
-.post-content { padding: 12px; }
+.post-content { padding: 12px; /* если нужно единообразие, оставьте 16px выше — это местоположение только для переопределения */ }
 .title { font-size: 18px; font-weight: 700; margin: 0; color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,0.3); }
 .meta { color: var(--muted); font-size: 13px; margin-top: 6px; }
 .excerpt { color: var(--text); margin-top: 8px; }
