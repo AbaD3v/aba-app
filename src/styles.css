@@ -1,12 +1,6 @@
-/* BilimShare — финальные стили
-   - контрастные кнопки
-   - видимые ghost-кнопки
-   - 3/2/1 колонки для постов
-   - профиль: grid карточек
-   - предотвращение серого overscroll
-   - анимации hover/focus
-*/
+/* BilimShare — полный рабочий CSS (4 карточки в ряд, растягивание на всю ширину) */
 
+/* ========== Переменные ========== */
 :root{
   --header-h: 64px;
   --bg: #0f1412;
@@ -23,7 +17,7 @@
   --online: #2ecc71;
 }
 
-/* Reset + overscroll fix */
+/* ========== Reset + базовые настройки ========== */
 *{box-sizing:border-box;margin:0;padding:0}
 html,body,#root{
   height:100%;
@@ -35,9 +29,12 @@ html,body,#root{
   font-size:15px;
   line-height:1.45;
 }
-body{overflow-x:hidden;background:linear-gradient(180deg,var(--bg),#071010 140%)}
+body{
+  overflow-x:hidden;
+  background:linear-gradient(180deg,var(--bg),#071010 140%);
+}
 
-/* App root */
+/* ========== App root & header ========== */
 .app-root{display:flex;flex-direction:column;min-height:100vh}
 
 /* Header */
@@ -61,7 +58,6 @@ header.header{
 .btn:active{ transform: translateY(-1px) scale(.996); }
 .btn:focus-visible{ outline: 3px solid rgba(var(--accent-rgb),0.16); outline-offset: 3px; }
 
-/* Ghost visible on dark and light */
 .btn.ghost{
   background: rgba(var(--accent-rgb), 0.03);
   color: var(--accent);
@@ -72,82 +68,100 @@ header.header{
   color: #0b0b0b;
   border-color: rgba(var(--accent-rgb), 0.36);
 }
-
 .btn.small{ padding:6px 8px; font-size:13px; border-radius:8px; }
-
-/* Header-specific overrides for buttons so they read on yellow */
 .header .nav .btn{ background:var(--accent); color:#111; border-color:#222; }
 .header .nav .btn.ghost{ background: transparent; color:#111; border-color:#222; }
 .header .nav .btn:hover{ background:var(--accent-strong); color:#111; }
 
-/* Container: left flexible + right fixed */
-/* ====== ОСНОВНОЕ РАЗМЕЩЕНИЕ ====== */
+/* ========== MAIN LAYOUT (консолидированный) ========== */
+/* Контейнер: основной контент + правый сайдбар.
+   Сделан full-width (без центровки), но с внутренними отступами.
+*/
 .container {
   display: grid;
-  /* основной столбец даём больше места, чтобы posts-column был шире */
-  grid-template-columns: 1.6fr 320px; /* раньше: 1fr 320px */
-  gap: 32px;
+  grid-template-columns: 1fr 320px; /* основная колонка + фиксированный сайдбар */
+  gap: 24px;
   width: 100%;
-  max-width: 1800px;
-  margin: 0 auto;
-  padding: 0 32px;
+  max-width: none;
+  margin: 0;
+  padding: calc(var(--header-h) + 16px) 24px 48px 24px; /* отступ сверху, чтобы не попадать под фиксированный header */
+  align-items: start;
 }
 
-/* ====== ЛЕВАЯ КОЛОНКА (ПОСТЫ) ====== */
-/* превращаем колонку в сетку — карточки займут всю доступную ширину */
+/* На маленьких экранах — сайдбар идёт под постами */
+@media (max-width: 1100px) {
+  .container {
+    display: flex;
+    flex-direction: column;
+    padding: calc(var(--header-h) + 12px) 16px 32px 16px;
+  }
+}
+
+/* ======= COLS ======= */
+/* Левая колонка (посты) — обязательно занимает всю доступную ширину */
 .posts-column {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* минимальная ширина карточки 280px, далее растягивается */
-  gap: 20px; /* расстояние между карточками */
   width: 100%;
-  max-width: none; /* убираем ограничение, чтобы колонка могла растягиваться */
-  margin: 0; /* убираем центровку, если была */
-  padding: 0;
-}
-
-/* ====== СЕТКА ПОСТОВ ====== */
-/* если у вас используется .posts-grid внутри .posts-column — синхронизируем правило */
-.posts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  width: 100%;
-}
-
-/* Больше карточек на экране при больших ширинах */
-@media (min-width: 1300px) {
-  .posts-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-@media (min-width: 1600px) {
-  .posts-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-@media (min-width: 1900px) {
-  .posts-grid {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-
-/* ====== КАРТОЧКА ПОСТА ====== */
-.post.card {
+  max-width: none;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  background: #1b1b1b; /* тёмный фон */
+  gap: 16px;
+}
+
+/* Сайдбар */
+.sidebar {
+  width: 320px;
+  position: sticky;
+  top: calc(var(--header-h) + 16px);
+  align-self: start;
+  justify-self: end;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  backdrop-filter: blur(6px);
+}
+
+/* ========== POSTS GRID ========== */
+/* Цель: ровно 4 колонки на широких экранах, адаптивно 3/2/1 */
+.posts-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 4 в ряд, равномерно растянуты */
+  gap: 24px;
+  width: 100%;
+  align-items: start;
+  justify-items: stretch;
+}
+
+/* Плавный переход числа колонок на разных ширинах */
+@media (max-width: 1600px) {
+  .posts-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } /* 3 колонки */
+}
+@media (max-width: 1200px) {
+  .posts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* 2 колонки */
+}
+@media (max-width: 760px) {
+  .posts-grid { grid-template-columns: 1fr; gap: 16px; } /* 1 колонка на мобиле */
+}
+
+/* ========== КАРТОЧКА ПОСТА ========== */
+.post.card, .post {
+  display: flex;
+  flex-direction: column;
+  background: #1b1b1b;
   color: #f2f2f2;
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: transform 240ms ease, box-shadow 240ms ease, border 240ms ease;
-  /* убраны min-width/min-height — ширина контролируется гридом */
+  width: 100%; /* важное правило: карточка занимает 100% ячейки грид */
+  box-sizing: border-box;
 }
 
-/* ====== ОБЛОЖКА ====== */
+/* Обложка */
 .post-cover {
-  /* восстановлена исходная высота обложки */
+  width: 100%;
   height: 220px;
   overflow: hidden;
   background: #0d0d0d;
@@ -156,55 +170,31 @@ header.header{
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
   transition: transform 360ms cubic-bezier(.2,.9,.3,1);
 }
+.post.card:hover .post-cover img,
+.post:hover .post-cover img { transform: scale(1.04); }
 
-.post.card:hover .post-cover img {
-  transform: scale(1.05);
-}
-
-/* ====== КОНТЕНТ ====== */
+/* Контент карточки */
 .post-content {
-  /* убрать минимальные размеры, вернуть обычные отступы */
   padding: 16px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
 }
-
 .title {
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 700;
   margin: 0;
   color: #fff;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.3);
 }
+.meta { color: var(--muted); font-size: 13px; margin-top: 6px; }
+.excerpt { color: var(--text); margin-top: 8px; line-height:1.4; }
+.post-footer { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 
-.meta {
-  color: #aaa;
-  font-size: 13px;
-  margin-top: 6px;
-}
-
-.excerpt {
-  color: #ddd;
-  margin-top: 10px;
-  line-height: 1.4;
-}
-
-.post-footer {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-top: 12px;
-}
-
-/* ====== САЙДБАР ====== */
-.sidebar {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.03);
-}
-
-/* ====== АНИМАЦИЯ ВХОДА ====== */
+/* Анимация входа */
 .post {
   opacity: 0;
   transform: translateY(10px);
@@ -217,31 +207,18 @@ header.header{
   }
 }
 
-@keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
-
-.post-cover { width: 100%; height: 220px; overflow: hidden; background: #0d0d0d; }
-.post-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 360ms cubic-bezier(.2,.9,.3,1); }
-.post:hover .post-cover img { transform: scale(1.04); }
-
-.post-content { padding: 12px; /* если нужно единообразие, оставьте 16px выше — это местоположение только для переопределения */ }
-.title { font-size: 18px; font-weight: 700; margin: 0; color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,0.3); }
-.meta { color: var(--muted); font-size: 13px; margin-top: 6px; }
-.excerpt { color: var(--text); margin-top: 8px; }
-.post-footer { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
-
-/* Sidebar */
-.sidebar{ position:sticky; top: calc(var(--header-h) + 16px); display:flex; flex-direction:column; gap:14px; }
+/* ========== SIDEBAR SECTIONS ========== */
 .sidebar-section{ background:var(--card); padding:12px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(255,255,255,0.03) }
 
-/* Forms */
+/* ========== Формы ========== */
 .input, textarea.input{ width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.03); background:rgba(255,255,255,0.02); color:var(--text) }
 textarea.input{ min-height:100px; resize:vertical }
+.input:focus, textarea.input:focus, select:focus{ outline: 3px solid rgba(var(--accent-rgb),0.12); outline-offset: 2px; border-color: rgba(var(--accent-rgb),0.28); }
 
-/* Post view, profile */
+/* ========== Вью поста, профиль и т.д. ========== */
 .post-view{ padding:16px; max-width:980px; margin:0 auto }
 .auth-card{ max-width:560px; margin:40px auto; padding:20px }
 
-/* Profile posts grid */
 .profile-posts{
   display:grid;
   grid-template-columns: 1fr;
@@ -255,118 +232,11 @@ textarea.input{ min-height:100px; resize:vertical }
 .footer-wrapper{ position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center; align-items:center; padding:12px 0; z-index:60; pointer-events:none }
 .footer-wrapper .footer{ pointer-events:auto; color:var(--muted); font-size:13px; }
 
-/* Responsive: move sidebar below on smaller */
-@media (max-width: 760px) {
-  main.container{ grid-template-columns: 1fr; }
-  .sidebar{ position: static; }
-}
-
-/* Utilities */
+/* Утилиты */
 .text-muted{ color:var(--muted); font-size:13px }
 .small{ font-size:13px; color:var(--muted) }
 .avatar{ background:var(--accent); color:#111; font-weight:700; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px }
 .danger{ color:#f44336; }
 
-/* Focus helpers */
-.input:focus, textarea.input:focus, select:focus{ outline: 3px solid rgba(var(--accent-rgb),0.12); outline-offset: 2px; border-color: rgba(var(--accent-rgb),0.28); }
-/* Контейнер для контента и сайдбара */
-.container {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 24px;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 24px;
-}
-
-/* Основная колонка с постами (увеличен максимум ширины) */
-.posts-column {
-  max-width: 1400px; /* раньше было 900px/1100px — увеличено */
-  width: 100%;
-  margin: 0 auto;
-}
-
-/* Сайдбар */
-.sidebar {
-  background: rgba(255,255,255,0.03);
-  border-radius: 16px;
-  padding: 16px;
-  height: fit-content;
-  position: sticky;
-  top: 100px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.05);
-}
-
-/* Адаптив для телефонов */
-@media (max-width: 1000px) {
-  .container {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .sidebar {
-    position: static;
-    margin-top: 24px;
-    width: 100%;
-  }
-}
-/* Главный контейнер: посты по центру, сайдбар прижат к правому краю */
-.container {
-  display: grid;
-  /* синхронизировано с первым изменением: даём основной колонке больше пространства */
-  grid-template-columns: 1.6fr 320px; /* раньше: 1fr 320px */
-  gap: 24px;
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 24px;
-  align-items: start;
-}
-
-/* Колонка с постами — центрируем */
-.posts-column {
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
-  width: 100%;
-}
-
-/* Сайдбар прижат к правому краю */
-.sidebar {
-  position: sticky;
-  top: 100px;
-  align-self: start;
-  justify-self: end;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  padding: 16px;
-  width: 320px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-  backdrop-filter: blur(6px);
-}
-
-/* Адаптив: на мобильных — под постами */
-@media (max-width: 1100px) {
-  .container {
-    display: flex;
-    flex-direction: column;
-    padding: 16px;
-  }
-
-  .sidebar {
-    position: static;
-    width: 100%;
-    margin-top: 24px;
-  }
-}
-.container {
-  display: grid;
-  grid-template-columns: 1.6fr 320px; /* контент + сайдбар — увеличенная доля контента */
-  gap: 24px;
-  width: 100vw;
-  max-width: none;
-  margin: 0;
-  padding: 0 24px;
-}
-
-
-
+/* Дополнительная защита от горизонтального скролла */
+html, body { min-width:0; }
