@@ -94,19 +94,23 @@ header.header{
 }
 
 /* ====== ЛЕВАЯ КОЛОНКА (ПОСТЫ) ====== */
+/* превращаем колонку в сетку — карточки займут всю доступную ширину */
 .posts-column {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* минимальная ширина карточки 280px, далее растягивается */
+  gap: 20px; /* расстояние между карточками */
+  width: 100%;
+  max-width: none; /* убираем ограничение, чтобы колонка могла растягиваться */
+  margin: 0; /* убираем центровку, если была */
+  padding: 0;
 }
 
 /* ====== СЕТКА ПОСТОВ ====== */
+/* если у вас используется .posts-grid внутри .posts-column — синхронизируем правило */
 .posts-grid {
   display: grid;
-  /* увеличено: карточки стали в 2 раза шире (680px) */
-  grid-template-columns: repeat(auto-fill, minmax(680px, 1fr));
-  gap: 32px; /* немного больше промежуток для визуального баланса */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
   width: 100%;
 }
 
