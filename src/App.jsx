@@ -144,13 +144,14 @@ export default function App() {
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
-      // 1) fetch posts via REST backend (keep existing behavior)
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
-      const postsRes = await fetch(`${API_URL}/posts`)
-      if (!postsRes.ok) throw new Error(`Failed to fetch posts: ${postsRes.status}`)
-      let postsData = await postsRes.json()
-      if (!Array.isArray(postsData)) postsData = []
-      postsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      // 1) fetch posts directly from Supabase
+const { data: postsDataRaw, error: postsErr } = await supabase
+  .from("posts")
+  .select("*")
+  .order("created_at", { ascending: false })
+
+if (postsErr) throw postsErr
+const postsData = postsDataRaw || []
 
       // 2) fetch related users (authors)
       const authorIds = Array.from(new Set((postsData || []).map(p => p.author).filter(Boolean)))
