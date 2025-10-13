@@ -370,8 +370,17 @@ const postsData = postsDataRaw || []
      Derived lists
      ----------------------------- */
   const categories = useMemo(() => {
-    const cats = Array.from(new Set((posts || []).map(p => p.category).filter(Boolean)))
-    return [...cats, 'Жалпы']
+    // учебные темы по умолчанию — будут показаны первыми
+    const defaultTopics = [
+      'Математика', 'Физика', 'Химия', 'Биология',
+      'История', 'География', 'Информатика',
+      'Қазақ тілі', 'Ағылшын тілі', 'Әдебиет'
+    ]
+    const postCats = Array.from(new Set((posts || []).map(p => p.category).filter(Boolean)))
+    // объединяем, сохраняем порядок: сначала defaultTopics, затем темы из постов (без дубликатов)
+    const merged = Array.from(new Set([...defaultTopics, ...postCats]))
+    if (!merged.includes('Жалпы')) merged.push('Жалпы')
+    return merged
   }, [posts])
 
   const visiblePosts = useMemo(() => (posts || []).filter(p => !filterCategory || p.category === filterCategory), [posts, filterCategory])
