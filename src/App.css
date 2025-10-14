@@ -160,4 +160,56 @@
   color: #555;
   font-size: 18px;
 }
+/* ========== COMMENTS ========== */
+.comment {
+  background: #1e1e1e; /* темный фон для комментариев */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.comment:hover {
+  background: #272727;
+  transform: translateY(-2px);
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #ffd350; /* выделяем автора цветом */
+  margin-bottom: 4px;
+}
+
+.comment-text {
+  color: #eee;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Вложенные ответы */
+.comment-replies {
+  margin-top: 8px;
+  margin-left: 20px; /* отступ для вложенности */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-reply {
+  background: #2a2a2a; /* чуть светлее фон для ответа */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.comment-reply .comment-author {
+  font-size: 13px;
+  color: #ffbf1a;
+}
+
+.comment-reply .comment-text {
+  font-size: 13px;
+  color: #ddd;
+}
 

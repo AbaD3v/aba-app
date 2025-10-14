@@ -618,9 +618,49 @@ function NewPostForm({ categories = [], onCreate }) {
   )
 }
 
+/* -----------------------------
+   PostView (обновлённый) + Comment (рекурсивный)
+   ----------------------------- */
 function PostView({ post, usersMap, currentUser, comments = [], likes, onLike, onBack, onComment, onDeleteComment, onDeletePost, onOpenProfile }) {
   const [text, setText] = useState('')
+
+  // Build comments tree from flat array: [{... parent_id ...}]
+  const commentsTree = useMemo(() => {
+    if (!comments || comments.length === 0) return []
+    const map = new Map()
+    const roots = []
+
+    // clone nodes and prepare children array
+    comments.forEach(c => {
+      map.set(c.id, { ...c, children: [] })
+    })
+
+    // attach children to parents or to roots
+    map.forEach(node => {
+      if (node.parent_id && map.has(node.parent_id)) {
+        map.get(node.parent_id).children.push(node)
+      } else {
+        roots.push(node)
+      }
+    })
+
+    // optional: sort children and roots by created_at asc
+    const sortRec = (arr) => {
+      arr.sort((a, b) => {
+        const ta = new Date(a.created_at || 0).getTime()
+        const tb = new Date(b.created_at || 0).getTime()
+        return ta - tb
+      })
+      arr.forEach(n => {
+        if (n.children && n.children.length) sortRec(n.children)
+      })
+    }
+    sortRec(roots)
+    return roots
+  }, [comments])
+
   if (!post) return null
+
   return (
     <div className="card post-view">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -641,9 +681,24 @@ function PostView({ post, usersMap, currentUser, comments = [], likes, onLike, o
 
       <section style={{ marginTop: 18 }}>
         <h4>Пікірлер ({comments.length})</h4>
+
         <div style={{ marginTop: 12 }}>
           {comments.length === 0 && <div className="text-muted small">Пікір жоқ</div>}
-          {comments.map(c => <Comment key={c.id} comment={c} usersMap={usersMap} currentUser={currentUser} postId={post.id} onComment={onComment} onDeleteComment={onDeleteComment} onOpenProfile={onOpenProfile} />)}
+
+          {/* Render comments tree (roots). Comment component renders replies recursively. */}
+          {commentsTree.map(c => (
+            <Comment
+              key={c.id}
+              comment={c}
+              usersMap={usersMap}
+              currentUser={currentUser}
+              postId={post.id}
+              onComment={onComment}
+              onDeleteComment={onDeleteComment}
+              onOpenProfile={onOpenProfile}
+              level={0}
+            />
+          ))}
         </div>
 
         {(currentUser && ['student', 'teacher', 'admin'].includes(currentUser.role)) && (
@@ -652,7 +707,7 @@ function PostView({ post, usersMap, currentUser, comments = [], likes, onLike, o
             <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
               <button className="btn small" onClick={async () => {
                 if (!text.trim()) return alert('Пікір жазу керек')
-                const r = await onComment(post.id, text.trim())
+                const r = await onComment(post.id, text.trim(), null)
                 if (r && r.error) alert(r.error); else setText('')
               }}>Жіберу</button>
             </div>
@@ -670,8 +725,11 @@ function Comment({ comment, usersMap, currentUser, postId, onComment, onDeleteCo
   const canDelete = currentUser && (currentUser.role === 'admin' || currentUser.id === comment.author)
   const canReply = currentUser && ['student', 'teacher', 'admin'].includes(currentUser.role)
 
+  // small indent style for nesting
+  const indentStyle = { marginLeft: level * 18, borderLeft: level ? '1px solid rgba(255,255,255,0.03)' : undefined, paddingLeft: level ? 12 : 0, marginTop: 12 }
+
   return (
-    <div className="comment" style={{ marginLeft: level * 18 }}>
+    <div className="comment" style={indentStyle}>
       <div className="meta">
         <button className="btn small ghost" onClick={() => onOpenProfile(author)}>{author.name}</button> · {timeAgo(comment.created_at)}
         {canDelete && <button className="btn small ghost danger" style={{ marginLeft: 8 }} onClick={() => onDeleteComment(comment.id)}>Жою</button>}
@@ -681,20 +739,37 @@ function Comment({ comment, usersMap, currentUser, postId, onComment, onDeleteCo
       {canReply && <button className="btn small ghost" onClick={() => setShowReply(s => !s)}>{showReply ? 'Болдырмау' : 'Жауап беру'}</button>}
 
       {showReply && (
-        <div className="reply-form">
+        <div className="reply-form" style={{ marginTop: 8 }}>
           <textarea className="input" rows={3} value={reply} onChange={(e) => setReply(e.target.value)} />
           <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
             <button className="btn small" onClick={async () => {
               if (!reply.trim()) return alert('Пікір жазу керек')
               const r = await onComment(postId, reply.trim(), comment.id)
-              if (r && r.error) alert(r.error); else { setReply(''); setShowReply(false) }
+              if (r && r.error) {
+                alert(r.error)
+              } else {
+                setReply(''); setShowReply(false)
+              }
             }}>Жіберу</button>
             <button className="btn small ghost" onClick={() => { setReply(''); setShowReply(false) }}>Болдырмау</button>
           </div>
         </div>
       )}
 
-      {/* If there are nested replies they will be shown by parent loader (comments are flat in this demo) */}
+      {/* Render replies recursively, if any */}
+      {comment.children && comment.children.length > 0 && comment.children.map(child => (
+        <Comment
+          key={child.id}
+          comment={child}
+          usersMap={usersMap}
+          currentUser={currentUser}
+          postId={postId}
+          onComment={onComment}
+          onDeleteComment={onDeleteComment}
+          onOpenProfile={onOpenProfile}
+          level={level + 1}
+        />
+      ))}
     </div>
   )
 }
