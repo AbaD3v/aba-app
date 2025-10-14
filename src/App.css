@@ -160,112 +160,131 @@
   color: #555;
   font-size: 18px;
 }
-/* ========== COMMENTS (enhanced nesting visuals) ========== */
+/* ========== COMMENTS — улучшенное выделение и вложенность ========== */
+/* переменные для удобной настройки */
+:root {
+  --comment-indent: 18px;
+  --comment-radius: 12px;
+  --comment-border: rgba(255,255,255,0.045);
+  --comment-shadow: 0 6px 20px rgba(0,0,0,0.28);
+  --comment-hover-bg: #2a2a2a;
+  --comment-accent: rgba(255,211,80,0.06);
+}
+
+/* базовый комментарий — скругления, лёгкая граница и тень */
 .comment {
-  /* базовый вид комментария (сохранены прежние принципы) */
-  background: #1e1e1e;
-  border: 1px solid rgba(255,255,255,0.04);
-  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+  border: 1px solid var(--comment-border);
+  border-radius: var(--comment-radius);
   padding: 12px 16px;
   margin-bottom: 12px;
-  transition: background 220ms ease, transform 160ms ease, box-shadow 160ms ease;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  transition: background 200ms ease, transform 160ms ease, box-shadow 160ms ease, border-color 200ms ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  position: relative;
+  overflow: visible;
 }
 
-/* плавный эффект при наведении */
+/* hover — мягкое выделение */
 .comment:hover {
-  background: #252525;
+  background: var(--comment-hover-bg);
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+  box-shadow: var(--comment-shadow);
+  border-color: rgba(255,211,80,0.12);
 }
 
-/* выделение автора */
+/* автор и текст — сохраняем существующие классы, но делаем контрастнее */
 .comment .comment-author,
 .comment-author {
-  font-weight: 600;
+  font-weight: 700;
   color: #ffd350;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
-/* текст */
 .comment .comment-text,
 .comment-text {
-  color: #eee;
+  color: #f1f1f1;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
+  margin: 6px 0;
 }
 
-/* replies container (keeps markup-friendly structure) */
+/* replies container — отступ сверху и вертикальный стек */
 .comment .comment-replies {
   margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  /* не полагаемся на фиксированный margin-left: учитываем вложенность через селекторы ниже */
 }
 
-/* визуальные отличия для уровней вложенности (по глубине) */
-/* 1 уровень вложенности */
+/* Визуальные отличия по уровню вложенности (через структуру DOM).
+   Каждый вложенный .comment получает чуть другой фон, меньший padding и вертикальную линию. */
+
+/* 1 уровень вложенности (прямой ответ) */
 .comment .comment {
-  background: #222; /* чуть светлее родителя */
-  border-color: rgba(255,255,255,0.045);
-  padding-left: 14px;
-  padding-right: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.06));
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 10px 14px;
   border-radius: 10px;
+  margin-left: var(--comment-indent);
   box-shadow: none;
-  position: relative;
+  transition: background 200ms ease, transform 140ms ease;
 }
 
-/* 2 уровень */
-.comment .comment .comment {
-  background: #272727;
-  border-color: rgba(255,255,255,0.05);
-  padding-left: 12px;
-  padding-right: 12px;
-  border-radius: 10px;
-}
-
-/* 3 уровень */
-.comment .comment .comment .comment {
-  background: #2b2b2b;
-  border-color: rgba(255,255,255,0.055);
-}
-
-/* 4+ уровни — поддержка на случай глубокой вложенности */
-.comment .comment .comment .comment .comment,
-.comment .comment .comment .comment .comment .comment {
-  background: #2f2f2f;
-  border-color: rgba(255,255,255,0.06);
-}
-
-/* Лёгкая вертикальная линия-контекст для вложенных (не обязательна, но помогает восприятию) */
+/* вертикальная тонкая линия-контекст внутри вложенных, помогает читать иерархию */
 .comment .comment::before {
   content: "";
   position: absolute;
-  left: 8px;
+  left: calc(-1 * var(--comment-indent) + 6px);
   top: 10px;
   bottom: 10px;
   width: 2px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,211,80,0.06));
   border-radius: 2px;
   opacity: 0.9;
 }
 
-/* reply-form (оставляем существующие классы, чуть уменьшаем отступ сверху) */
+/* 2 уровень */
+.comment .comment .comment {
+  background: linear-gradient(180deg, rgba(255,255,255,0.008), rgba(0,0,0,0.07));
+  border: 1px solid rgba(255,255,255,0.045);
+  padding: 9px 12px;
+  margin-left: calc(var(--comment-indent) * 2);
+}
+
+/* 3 уровень и глубже — плавное затемнение фона */
+.comment .comment .comment .comment,
+.comment .comment .comment .comment .comment {
+  background: linear-gradient(180deg, rgba(255,255,255,0.006), rgba(0,0,0,0.08));
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 8px 10px;
+  margin-left: calc(var(--comment-indent) * 3);
+}
+
+/* Акцентная рамка/фон для быстрого визуального отличия (опционально у ответов автора поста) */
+/* допустим, если элемент получает класс .is-author, выделяем его */
+.comment.is-author {
+  box-shadow: 0 4px 18px rgba(255,211,80,0.06);
+  border-color: rgba(255,211,80,0.12);
+}
+
+/* reply-form — не меняем семантику, лишь уменьшаем отступ сверху */
 .reply-form { margin-top: 10px; }
 
-/* мета-информация остаётся прежней, но чуть уменьшим отступы внутри вложенных */
-.meta { display:inline-flex; gap:8px; align-items:center; font-size:13px; color:#ccc; }
+/* meta — сохраняем и немного уплотняем элементы */
+.meta { display:inline-flex; gap:8px; align-items:center; font-size:13px; color:#cfcfcf; }
 
-/* Сохранить btn и input — небольшие улучшения доступны в рамках комментариев */
-.btn.small { font-size:13px; padding:6px 8px; }
+/* кнопки внутри комментариев — компактнее */
+.comment .btn.small { padding:6px 8px; font-size:13px; }
 
-/* Адаптив: на мобильных уменьшаем отступы и убираем сильные внутр. паддинги */
+/* input внутри комментариев — чуть меньше и адаптивнее */
+.comment .input, .reply-form .input { font-size:14px; padding:8px 10px; }
+
+/* мобильная адаптация: уменьшаем отступы, чтобы вложенность не "съедала" экран */
 @media (max-width: 760px) {
-  .comment { padding: 10px 12px; border-radius:10px; }
-  .comment .comment { padding-left: 10px; padding-right: 10px; }
-  .comment .comment::before { left:6px; }
-  /* уменьшаем накопленный визуальный отступ у вложенности */
-  .comment .comment, .comment .comment .comment, .comment .comment .comment .comment { margin-left: 0; }
+  :root { --comment-indent: 12px; --comment-radius: 10px; }
+  .comment { padding: 10px 12px; }
+  .comment .comment { margin-left: var(--comment-indent); padding: 8px 10px; }
+  .comment .comment .comment { margin-left: calc(var(--comment-indent) * 2); padding: 7px 9px; }
+  .comment .comment::before { left: calc(-1 * var(--comment-indent) + 4px); }
 }
 
